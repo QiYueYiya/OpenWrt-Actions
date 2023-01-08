@@ -12,9 +12,7 @@ name: X86
 
 on:
   workflow_dispatch:
-    inputs:
-      manual:
-        description: '手动触发一次编译'
+    description: '手动触发一次编译'
   schedule:
     - cron: 0 16 1-7 * 5
 
