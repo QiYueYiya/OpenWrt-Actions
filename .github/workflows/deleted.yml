@@ -1,4 +1,4 @@
-name: 删除Workflow与Releases
+name: 删除Workflow
 
 on:
   workflow_dispatch:
@@ -14,11 +14,3 @@ jobs:
       with:
         retain_days: 1
         keep_minimum_runs: 2
-
-    - name: 删除旧的releases
-      uses: dev-drprasad/delete-older-releases@master
-      with:
-        keep_latest: 5
-        delete_tags: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
