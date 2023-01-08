@@ -1,0 +1,153 @@
+#
+# Copyright (c) 2019-2020 P3TERX <https://p3terx.com>
+#
+# This is free software, licensed under the MIT License.
+# See /LICENSE for more information.
+#
+# https://github.com/P3TERX/Actions-OpenWrt
+# Description: Build OpenWrt using GitHub Actions
+#
+
+name: X86-School
+
+on:
+  workflow_dispatch:
+    inputs:
+      manual:
+        description: '手动触发一次编译'
+  schedule:
+    - cron: 0 16 1-7 * 5
+
+env:
+  REPO_URL: https://github.com/coolsnowwolf/lede
+  REPO_BRANCH: master
+  FEEDS_CONF: X86-School/feeds.conf.default
+  CONFIG_FILE: X86-School/main.config
+  DIY_P1_SH: X86-School/diy1.sh
+  DIY_P2_SH: X86-School/diy2.sh
+  UPLOAD_FIRMWARE: true
+  UPLOAD_RELEASE: true
+  PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
+  OPKG_URL:  ${{ secrets.OPKG_URL }}
+  TZ: Asia/Shanghai
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: 检查项目分支
+      uses: actions/checkout@main
+
+    - name: 初始化编译环境
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
+        sudo bash -c 'bash <(curl -s https://build-scripts.immortalwrt.eu.org/init_build_environment.sh)'
+        sudo timedatectl set-timezone "$TZ"
+        sudo mkdir -p /workdir
+        sudo chown $USER:$GROUPS /workdir
+        echo "FIRMWARE_VERSION=$(date +"%y%m%d")" >> $GITHUB_ENV
+        echo "START_DATE=$(date +'%Y年%m月%d日 %H点%M分%S秒')" >> $GITHUB_ENV
+
+    - name: PushPlus 通知
+      if: env.PUSHPLUS_TOKEN
+      continue-on-error: true
+      run: |
+        curl -k -d "title=开始编译X86-School固件" -d "content=编译固件版本：${{ env.FIRMWARE_VERSION }}%0A编译开始时间：${{ env.START_DATE }}" -d "token=${{ env.PUSHPLUS_TOKEN }}&channel=cp&webhook=server" "http://www.pushplus.plus/send"
+    
+    - name: 下载源码
+      working-directory: /workdir
+      run: |
+        df -hT $PWD
+        git clone $REPO_URL -b $REPO_BRANCH openwrt
+        ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
+
+    - name: 加载软件源
+      run: |
+        [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
+        chmod +x $DIY_P1_SH
+        cd openwrt
+        $GITHUB_WORKSPACE/$DIY_P1_SH
+
+    - name: 更新并安装软件源
+      run: cd openwrt && ./scripts/feeds update -a && ./scripts/feeds install -a
+
+    - name: 加载自定义配置
+      run: |
+        [ -e X86-School/files ] && mv X86-School/files openwrt/files && sed -i 's/172.16.1.1/$OPKG_URL/g' openwrt/files/etc/opkg/distfeeds.conf
+        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
+        chmod +x $DIY_P2_SH
+        cd openwrt
+        $GITHUB_WORKSPACE/$DIY_P2_SH
+
+    - name: 下载包
+      id: package
+      run: |
+        cd openwrt
+        make defconfig
+        make download -j8
+        find dl -size -1024c -exec ls -l {} \;
+        find dl -size -1024c -exec rm -f {} \;
+
+    - name: 编译固件
+      id: compile
+      run: |
+        cd openwrt
+        echo -e "$(nproc) thread compile"
+        make -j$(nproc) || make -j1 || make -j1 V=s || (curl -k -d "title=X86-School固件编译失败" -d "content=编译固件版本：${{ env.FIRMWARE_VERSION }}%0A编译开始时间：${{ env.START_DATE }}%0A编译结束时间：$(date +'%Y年%m月%d日 %H点%M分%S秒')" -d "token=${{ env.PUSHPLUS_TOKEN }}&channel=cp&webhook=server" "http://www.pushplus.plus/send")
+        echo "status=success" >> $GITHUB_OUTPUT
+
+    - name: 整理固件
+      id: organize
+      if: steps.compile.outputs.status == 'success' && env.UPLOAD_FIRMWARE == 'true' && !cancelled()
+      run: |
+        # 整理固件包时候,删除您不想要的固件或者文件,让它不需要上传到Actions空间
+        cd openwrt/bin/targets/*/*
+        rm -rf packages
+        rm -rf version.buildinfo
+        rm -rf profiles.json
+        rm -rf *rootfs*
+        rm -rf *kernel*
+        rm -rf *.manifest
+        rm -rf sha256sums
+        mv *combined.img.gz ${{ env.FIRMWARE_VERSION }}-X86-School-squashfs.img.gz
+        mv *combined-efi.img.gz ${{ env.FIRMWARE_VERSION }}-X86-School-squashfs-efi.img.gz
+        echo "FIRMWARE=$PWD" >> $GITHUB_ENV
+        echo "status=success" >> $GITHUB_OUTPUT
+
+    - name: 上传固件到Github Action空间
+      uses: actions/upload-artifact@main
+      if: steps.organize.outputs.status == 'success' && !cancelled()
+      with:
+        name: ${{ env.FIRMWARE_VERSION }}-X86-School
+        path: ${{ env.FIRMWARE }}
+
+    - name: 创建release标签
+      id: tag
+      if: steps.organize.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true' && !cancelled()
+      run: |
+        release_tag="X86-School"
+        echo "编译时间：$(date +'%Y年%m月%d日 %H点%M分')" >> release.txt
+        echo "默认网关：192.168.3.1" >> release.txt
+        echo "release_tag=$release_tag" >> $GITHUB_OUTPUT
+        echo "status=success" >> $GITHUB_OUTPUT
+
+    - name: 将固件上传到release
+      uses: softprops/action-gh-release@v1
+      if: steps.tag.outputs.status == 'success' && !cancelled()
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        name: ${{ env.FIRMWARE_VERSION }}-X86-School
+        tag_name: ${{ steps.tag.outputs.release_tag }}
+        body_path: release.txt
+        files: ${{ env.FIRMWARE }}/*
+
+    - name: PushPlus 通知
+      if: env.PUSHPLUS_TOKEN
+      continue-on-error: true
+      run: |
+        curl -k -d "title=X86-School固件编译成功" -d "content=编译固件版本：${{ env.FIRMWARE_VERSION }}%0A编译开始时间：${{ env.START_DATE }}%0A编译结束时间：$(date +'%Y年%m月%d日 %H点%M分%S秒')" -d "token=${{ env.PUSHPLUS_TOKEN }}&channel=cp&webhook=server" "http://www.pushplus.plus/send"
+

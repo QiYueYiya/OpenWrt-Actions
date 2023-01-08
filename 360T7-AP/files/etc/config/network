@@ -1,0 +1,48 @@
+
+config interface 'loopback'
+	option device 'lo'
+	option proto 'static'
+	option ipaddr '127.0.0.1'
+	option netmask '255.0.0.0'
+
+config globals 'globals'
+
+config device
+	option name 'br-lan'
+	option type 'bridge'
+	list ports 'eth0'
+
+config device
+	option name 'eth0'
+	option macaddr 'E0:EF:02:6E:62:6F'
+
+config interface 'lan'
+	option device 'br-lan'
+	option proto 'static'
+	option ipaddr '172.16.0.2'
+	option netmask '255.255.0.0'
+	option gateway '172.16.0.1'
+	list dns '114.114.114.114'
+	list dns '223.5.5.5'
+	option delegate '0'
+
+config device
+	option name 'eth1'
+	option macaddr 'E0:EF:02:6e:62:70'
+
+config switch
+	option name 'switch0'
+	option reset '1'
+	option enable_vlan '1'
+
+config switch_vlan
+	option device 'switch0'
+	option vlan '1'
+	option vid '1'
+	option ports '0 1 2 3 5 6'
+
+config switch_vlan
+	option device 'switch0'
+	option vlan '2'
+	option vid '2'
+
