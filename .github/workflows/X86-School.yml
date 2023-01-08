@@ -20,7 +20,7 @@ env:
   REPO_URL: https://github.com/coolsnowwolf/lede
   REPO_BRANCH: master
   FEEDS_CONF: X86-School/feeds.conf.default
-  CONFIG_FILE: X86-School/main.config
+  CONFIG_FILE: X86-School/.config
   DIY_P1_SH: X86-School/diy1.sh
   DIY_P2_SH: X86-School/diy2.sh
   UPLOAD_FIRMWARE: true
