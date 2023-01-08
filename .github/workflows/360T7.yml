@@ -20,7 +20,7 @@ env:
   REPO_URL: https://github.com/hanwckf/immortalwrt-mt798x
   REPO_BRANCH: openwrt-21.02
   FEEDS_CONF: 360T7/feeds.conf.default
-  CONFIG_FILE: 360T7/main.config
+  CONFIG_FILE: 360T7/.config
   DIY_P1_SH: 360T7/diy1.sh
   DIY_P2_SH: 360T7/diy2.sh
   UPLOAD_FIRMWARE: true
