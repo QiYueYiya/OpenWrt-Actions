@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     description: '手动触发一次编译'
   schedule:
-    - cron: 0 16 2-8 * 6
+    - cron: 0 1 * * *
 
 jobs:
   del_runs:
@@ -14,7 +14,7 @@ jobs:
       uses: GitRML/delete-workflow-runs@main
       with:
         repository: ${{ github.repository }}
-        retain_days: 0
+        retain_days: 1
         keep_minimum_runs: 2
 
     - name: 删除旧的releases
