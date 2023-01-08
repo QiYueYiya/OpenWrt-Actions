@@ -12,7 +12,6 @@ name: 360T7-Mini
 
 on:
   workflow_dispatch:
-    description: '手动触发一次编译'
   schedule:
     - cron: 0 16 1-7 * 5
 
