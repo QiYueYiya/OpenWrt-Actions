@@ -1,4 +1,4 @@
-name: 360T7
+name: Delete
 
 on:
   workflow_dispatch:
