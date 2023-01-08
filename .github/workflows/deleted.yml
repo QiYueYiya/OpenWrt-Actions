@@ -2,9 +2,7 @@ name: Delete
 
 on:
   workflow_dispatch:
-    inputs:
-      manual:
-        description: '手动触发一次编译'
+    description: '手动触发一次编译'
   schedule:
     - cron: 0 16 2-8 * 6
 
@@ -16,12 +14,12 @@ jobs:
       uses: GitRML/delete-workflow-runs@main
       with:
         retain_days: 1
-        keep_minimum_runs: 5
+        keep_minimum_runs: 2
 
     - name: 删除旧的releases
-      uses: dev-drprasad/delete-older-releases@v0.1.0
+      uses: dev-drprasad/delete-older-releases@master
       with:
-        keep_latest: 5
+        keep_latest: 10
         delete_tags: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
