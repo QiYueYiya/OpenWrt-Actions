@@ -1,6 +1,7 @@
 name: 删除Workflow与Releases
 
 on:
+  workflow_dispatch:
   schedule:
     - cron: 0 1 * * *
 
