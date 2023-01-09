@@ -1,7 +1,7 @@
 # X86-School
-此版本为校园网特供版，添加UA2F、Mentohust插件
+此版本为校园网特供版
 
-# UA2F配置(需手动配置)
+## UA2F配置(需手动配置)
 
 ```bash
 # 开机自启
@@ -22,7 +22,7 @@ service ua2f enable
 service ua2f start
 ```
 
-# 防火墙配置(已自动配置)
+## 防火墙配置(已自动配置)
 
 通过 iptables 修改 TTL 值
 ```
