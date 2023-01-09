@@ -9,15 +9,15 @@ jobs:
   del_runs:
     runs-on: ubuntu-latest
     steps:
-      - name: 当前时间
+    - name: 当前时间
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
         sudo timedatectl set-timezone "$TZ"
         date +'%Y年%m月%d日 %H点%M分%S秒'
 
-      - name: 删除Workflow工作流运行
-        uses: Mattraks/delete-workflow-runs@v2
-        with:
-          retain_days: 1
-          keep_minimum_runs: 2
+    - name: 删除Workflow工作流运行
+      uses: Mattraks/delete-workflow-runs@v2
+      with:
+        retain_days: 1
+        keep_minimum_runs: 2
