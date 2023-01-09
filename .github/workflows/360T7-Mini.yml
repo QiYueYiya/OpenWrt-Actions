@@ -127,6 +127,7 @@ jobs:
         release_tag="360T7-Mini"
         echo "编译时间：$(date +'%Y年%m月%d日 %H点%M分')" >> release.txt
         echo "默认网关：192.168.3.1" >> release.txt
+        echo 插件列表：$(grep "CONFIG_PACKAGE_luci-app-\(.*\)=y" config.buildinfo | sed "s/CONFIG_PACKAGE_luci-app-\(.*\)=y/\1/g" | grep -v "_") >> release.txt
         echo "release_tag=$release_tag" >> $GITHUB_OUTPUT
         echo "status=success" >> $GITHUB_OUTPUT
 
