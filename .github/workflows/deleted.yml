@@ -9,6 +9,8 @@ jobs:
   del_runs:
     runs-on: ubuntu-latest
     steps:
+      - name: 当前时间
+        run: date +'%Y年%m月%d日 %H点%M分%S秒'
       - name: 删除Workflow工作流运行
         uses: Mattraks/delete-workflow-runs@v2
         with:
