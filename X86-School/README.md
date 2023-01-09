@@ -24,13 +24,10 @@ service ua2f start
 
 ## 防火墙配置(已自动配置)
 
-通过 iptables 修改 TTL 值
 ```
+# 通过 iptables 修改 TTL 值
 iptables -t mangle -A POSTROUTING -j TTL --ttl-set 128
-```
-
-防时钟偏移检测
-```
+# 防时钟偏移检测
 iptables -t nat -N ntp_force_local
 iptables -t nat -I PREROUTING -p udp --dport 123 -j ntp_force_local
 iptables -t nat -A ntp_force_local -d 0.0.0.0/8 -j RETURN
