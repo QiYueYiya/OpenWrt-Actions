@@ -24,7 +24,7 @@ service ua2f start
 
 ## 防火墙配置(已自动配置)
 
-```
+```bash
 # 通过 iptables 修改 TTL 值
 iptables -t mangle -A POSTROUTING -j TTL --ttl-set 128
 # 防时钟偏移检测
