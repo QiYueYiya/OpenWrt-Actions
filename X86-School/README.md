@@ -38,11 +38,10 @@ iptables -t nat -A ntp_force_local -s 192.168.0.0/16 -j DNAT --to-destination 19
 
 ## 验证
 
-访问：[UA检测-HTTP](http://ua.233996.xyz/)
-
-如果你的真实UA是(服务器获取的 UA)：FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-
-则配置正确
+1. 只需要关注“如果你的真实UA是(服务器获取的 UA)”，下面的“你的浏览器UA是”无需关注
+2. 进行测试时请确保你没用使用任何VPN代理，因为VPN代理会加密流量进而导致UA2F不会去修改加密请求的UA
+3. 访问：[UA检测-HTTP](http://ua.233996.xyz/)，如果你的真实UA是(服务器获取的 UA)：FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+4. 说明配置正确
 
 ## 注意
 - UA2F可能会与科学上网插件冲突，因此要做好取舍。具体表现为80端口修改失效，其它部分端口正常
