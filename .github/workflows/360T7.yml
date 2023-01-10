@@ -45,7 +45,7 @@ jobs:
         sudo mkdir -p /workdir
         sudo chown $USER:$GROUPS /workdir
         echo "FIRMWARE_VERSION=$(date +"%y%m%d")" >> $GITHUB_ENV
-        echo "START_DATE=$(date +'%Y年%m月%d日 %H点%M分%S秒')" >> $GITHUB_ENV
+        echo "START_DATE=$(date +'%Y年%m月%d日 %H点%M分')" >> $GITHUB_ENV
 
     - name: PushPlus 通知
       if: env.PUSHPLUS_TOKEN
@@ -108,8 +108,8 @@ jobs:
         rm -rf *kernel*
         rm -rf *.manifest
         rm -rf sha256sums
-        mv *sysupgrade.bin ${{ env.FIRMWARE_VERSION }}-360T7-108M-sysupgrade.bin
-        mv *factory.bin ${{ env.FIRMWARE_VERSION }}-360T7-108M-factory.bin
+        mv *sysupgrade.bin 360T7-108M-sysupgrade.bin
+        mv *factory.bin 360T7-108M-factory.bin
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
 
@@ -117,7 +117,7 @@ jobs:
       uses: actions/upload-artifact@main
       if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
-        name: ${{ env.FIRMWARE_VERSION }}-360T7
+        name: 360T7-108M-${{ env.FIRMWARE_VERSION }}
         path: ${{ env.FIRMWARE }}
 
     - name: 创建release标签
@@ -125,9 +125,9 @@ jobs:
       if: steps.organize.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true' && !cancelled()
       run: |
         release_tag="360T7"
-        echo "编译时间：$(date +'%Y年%m月%d日 %H点%M分')" >> release.txt
+        echo "编译时间：${{ env.START_DATE }}" >> release.txt
         echo "默认网关：192.168.3.1" >> release.txt
-        echo 插件列表：$(grep "CONFIG_PACKAGE_luci-app-\(.*\)=y" config.buildinfo | sed "s/CONFIG_PACKAGE_luci-app-\(.*\)=y/\1/g" | grep -v "_") >> release.txt
+        echo 插件列表：$(grep "CONFIG_PACKAGE_luci-app-\(.*\)=y" $CONFIG_FILE | sed "s/CONFIG_PACKAGE_luci-app-\(.*\)=y/\1/g" | grep -v "_") >> release.txt
         echo "release_tag=$release_tag" >> $GITHUB_OUTPUT
         echo "status=success" >> $GITHUB_OUTPUT
 
@@ -137,7 +137,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        name: ${{ env.FIRMWARE_VERSION }}-360T7
+        name: 360T7-${{ env.FIRMWARE_VERSION }}
         tag_name: ${{ steps.tag.outputs.release_tag }}
         body_path: release.txt
         files: ${{ env.FIRMWARE }}/*
