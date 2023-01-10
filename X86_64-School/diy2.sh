@@ -15,7 +15,7 @@ sed -i "s/DISTRIB_DESCRIPTION=.*/DISTRIB_DESCRIPTION='OpenWrt By QiYueYi $(date 
 sed -i 's/services/vpn/g' feeds/luci/applications/luci-app-v2ray-server/luasrc/controller/*.lua
 sed -i 's/services/vpn/g' feeds/luci/applications/luci-app-v2ray-server/luasrc/model/cbi/v2ray_server/*.lua
 sed -i 's/services/vpn/g' feeds/luci/applications/luci-app-v2ray-server/luasrc/view/v2ray_server/*.htm
-target=$(grep "^CONFIG_TARGET" .config --max-count=1 | awk -F "=" '{print $1}' | awk -F "_" '{print $3}')
+target=$(grep -m 1 "CONFIG_TARGET_.*=y" .config | sed 's/CONFIG_TARGET_\(.*\)=y/\1/g')
 for configFile in $(ls target/linux/$target/config*)
 do
     echo -e "\nCONFIG_NETFILTER_NETLINK_GLUE_CT=y" >> $configFile
