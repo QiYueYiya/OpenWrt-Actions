@@ -8,7 +8,7 @@
 # Description: Build OpenWrt using GitHub Actions
 #
 
-name: X86_64-School
+name: X86_64-Schoo
 
 on:
   workflow_dispatch:
