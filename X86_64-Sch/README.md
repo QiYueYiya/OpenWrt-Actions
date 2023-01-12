@@ -1,5 +1,5 @@
-# X86-School
-此版本为校园网特供版
+# X86_64-Sch
+此版本为校园网特供版，添加了一些针对校园网的插件
 
 ## UA2F配置(需手动配置)
 
@@ -48,3 +48,9 @@ iptables -t nat -A ntp_force_local -s 192.168.0.0/16 -j DNAT --to-destination 19
 - UA2F也可能会和mwan3冲突，也不要开启Flow Offloading加速以及其他QoS工具
 - 由于微信mmtls协议的影响，可能会导致微信图片无法发送，如有需要请关闭处理微信的mmtls
 - 建立NTP服务器统一时间戳防时钟偏移检测这种方案并不完善，设备在接入网络后可能更新时间不及时，所以建议手动触发更新时间
+
+## 参考
+- [详细教程](https://sunbk201public.notion.site/sunbk201public/OpenWrt-f59ae1a76741486092c27bc24dbadc59)
+- [Zxilly/UA2F](https://github.com/Zxilly/UA2F)
+
+
