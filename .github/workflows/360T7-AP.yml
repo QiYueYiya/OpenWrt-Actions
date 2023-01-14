@@ -13,7 +13,7 @@ name: 360T7-AP
 on:
   workflow_dispatch:
   schedule:
-    - cron: 0 16 1 * *
+    - cron: 0 16 1,15 * *
 
 env:
   REPO_URL: https://github.com/hanwckf/immortalwrt-mt798x
