@@ -73,7 +73,7 @@ jobs:
 
     - name: 加载自定义配置
       run: |
-        [ -e X86_64-Sch/files ] && mv X86_64-Sch/files openwrt/files && sed -i "s/172.16.1.1/$OPKG_URL/g" openwrt/files/etc/opkg/distfeeds.conf
+        [ -e X86_64-Sch/files ] && mv X86_64-Sch/files openwrt/files
         [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
         chmod +x $DIY_P2_SH
         cd openwrt
