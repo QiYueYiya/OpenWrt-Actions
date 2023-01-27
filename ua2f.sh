@@ -1,6 +1,14 @@
 #!/bin/bash
+################ 360T7专属设置 ################
+echo "关闭硬件加速中"
+hnat_path="/sys/kernel/debug/hnat/hook_toggle"
+[ -e $hnat_path ] && echo 0 > $hnat_path
+[ -e $hnat_path ] && (grep hook_toggle /etc/rc.local && echo '硬件加速已关闭！' || sed -i '$i sleep 5 && echo 0 > /sys/kernel/debug/hnat/hook_toggle' /etc/rc.local)
+##############################################
 echo "设置防火墙规则中"
+echo "# 修改TTL值为128" >> /etc/firewall.user
 echo "iptables -t mangle -A POSTROUTING -j TTL --ttl-set 128" >> /etc/firewall.user
+echo "# 设置NTP服务器" >> /etc/firewall.user
 echo "iptables -t nat -N ntp_force_local" >> /etc/firewall.user
 echo "iptables -t nat -I PREROUTING -p udp --dport 123 -j ntp_force_local" >> /etc/firewall.user
 echo "iptables -t nat -A ntp_force_local -d 0.0.0.0/8 -j RETURN" >> /etc/firewall.user
