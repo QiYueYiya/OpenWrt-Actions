@@ -14,7 +14,7 @@
 #sed -i 's/^#\(.*helloworld\)/\1/' feeds.conf.default
 
 # Add feed sources
-# sed -i '$a src-git-full qiyueyi https://github.com/QiYueYiya/openwrt-package.git' feeds.conf.default
+sed -i '$a src-git-full qiyueyi https://github.com/QiYueYiya/openwrt-package.git' feeds.conf.default
 # theme
 # git clone https://github.com/jerrykuku/luci-theme-argon.git package/luci-theme-argon
 # rm -rf package/luci-theme-argon/README* package/luci-theme-argon/Screenshots/
