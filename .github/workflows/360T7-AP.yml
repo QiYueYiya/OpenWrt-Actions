@@ -117,14 +117,14 @@ jobs:
       uses: actions/upload-artifact@main
       if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
-        name: 360T7-AP-108M-${{ env.FIRMWARE_VERSION }}
+        name: 360T7-AP-${{ env.FIRMWARE_VERSION }}
         path: ${{ env.FIRMWARE }}
 
     - name: 创建release标签
       id: tag
       if: steps.organize.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true' && !cancelled()
       run: |
-        release_tag="360T7-AP"
+        release_tag="360T7-AP-${{ env.FIRMWARE_VERSION }}"
         echo "编译时间：${{ env.START_DATE }}" >> release.txt
         echo "默认地址：172.16.0.2" >> release.txt
         echo 包含插件：$(grep "CONFIG_PACKAGE_luci-app-\(.*\)=y" openwrt/.config | sed "s/CONFIG_PACKAGE_luci-app-\(.*\)=y/\1/g" | grep -v "_\|arpbind\|autoreboot\|firewall\|mtk\|opkg") >> release.txt
