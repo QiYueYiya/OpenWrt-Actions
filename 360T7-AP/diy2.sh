@@ -12,5 +12,6 @@
 
 # Modify default IP
 sed -i 's/192.168.1.1/192.168.3.1/g' package/base-files/files/bin/config_generate
-sed -i "s/hostname='ImmortalWrt'/hostname='360T7-AP'/g" package/base-files/files/bin/config_generate
+sed -i "s/hostname='ImmortalWrt'/hostname='Pardofelis'/g" package/base-files/files/bin/config_generate
 sed -i "s/DISTRIB_DESCRIPTION=.*/DISTRIB_DESCRIPTION='Pardofelis and QiYueYi $(date +"%y%m%d")'/g" package/base-files/files/etc/openwrt_release
+echo "DISTRIB_MODEL='360T7-AP'" >> package/base-files/files/etc/openwrt_release

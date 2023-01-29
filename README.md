@@ -9,10 +9,16 @@
 | [X86_64](https://github.com/QiYueYiya/OpenWrt-Actions/tree/main/X86_64) | [![](https://github.com/QiYueYiya/OpenWrt-Actions/actions/workflows/X86_64.yml/badge.svg)](https://github.com/QiYueYiya/OpenWrt-Actions/actions/workflows/X86_64.yml) | [Config](https://github.com/QiYueYiya/OpenWrt-Actions/blob/main/X86_64/.config) | [软件源](https://github.com/QiYueYiya/OpenWrt-Actions/blob/main/X86_64/files/etc/opkg/distfeeds.conf) | [下载链接](https://github.com/QiYueYiya/OpenWrt-Actions/releases/tag/X86_64) |
 | [X86_64-Sch](https://github.com/QiYueYiya/OpenWrt-Actions/tree/main/X86_64-Sch) | [![](https://github.com/QiYueYiya/OpenWrt-Actions/actions/workflows/X86_64-Sch.yml/badge.svg)](https://github.com/QiYueYiya/OpenWrt-Actions/actions/workflows/X86_64-Sch.yml) | [Config](https://github.com/QiYueYiya/OpenWrt-Actions/blob/main/X86_64-Sch/.config) | [软件源](https://github.com/QiYueYiya/OpenWrt-Actions/blob/main/X86_64-Sch/files/etc/opkg/distfeeds.conf) | [下载链接](https://github.com/QiYueYiya/OpenWrt-Actions/releases/tag/X86_64-Sch) |
 
+## 一键升级固件
+
+```bash
+bash <(curl -sSL https://raw.gh.fakev.cn//QiYueYiya/OpenWrt-Actions/main/update.sh)
+```
+
 ## 一键配置UA2F
 
 ```bash
-bash <(curl -sL https://gh-proxy.com/https://raw.githubusercontent.com/QiYueYiya/OpenWrt-Actions/main/ua2f.sh)
+bash <(curl -sSL https://raw.gh.fakev.cn//QiYueYiya/OpenWrt-Actions/main/ua2f.sh)
 ```
 
 ## 验证
