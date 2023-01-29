@@ -1,5 +1,6 @@
 ## 注意
-本仓库为我个人自用，部分固件配置不适用于你，请小心使用
+- 固件更新时间为每周五凌晨两点
+- 本仓库为我个人自用，部分固件配置不适用于你，请小心使用
 
 ## 固件列表
 | 设备名称 | 编译状态 | 配置文件 | 源地址 | 固件下载 |
@@ -16,13 +17,11 @@ bash <(curl -sSL https://raw.gh.fakev.cn/QiYueYiya/OpenWrt-Actions/main/update.s
 ```
 
 ## 一键配置UA2F
-
 ```bash
 bash <(curl -sSL https://raw.gh.fakev.cn/QiYueYiya/OpenWrt-Actions/main/ua2f.sh)
 ```
 
 ## 验证
-
 - 进行测试时请确保你没用使用任何VPN代理，因为VPN代理会加密流量进而导致UA2F不会去修改加密请求的UA
 - 只需要关注“如果你的真实UA是(服务器获取的 UA)”，下面的“你的浏览器UA是”无需关注
 - 访问：[UA检测-HTTP](http://ua.233996.xyz/)，如果你的真实UA是(服务器获取的 UA)：
