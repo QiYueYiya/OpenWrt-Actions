@@ -3,7 +3,7 @@ name: Remove
 on:
   workflow_dispatch:
   schedule:
-    - cron: 0 15 1,15 * *
+    - cron: 0 0 2,16 * *
 
 jobs:
   Delete-Workflow:
@@ -12,5 +12,5 @@ jobs:
     - name: 删除工作流
       uses: FunctionXJB/delete-workflow-runs@main
       with:
-        retain_days: 1
+        retain_days: 10
         keep_minimum_runs: 1
