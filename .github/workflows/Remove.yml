@@ -12,7 +12,7 @@ jobs:
     - name: 删除工作流
       uses: GitRML/delete-workflow-runs@main
       with:
-        retain_days: 10
+        retain_days: 1
         keep_minimum_runs: 1
 
     - name: 移除旧项目
