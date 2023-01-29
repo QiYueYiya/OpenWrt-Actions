@@ -125,7 +125,7 @@ jobs:
       id: tag
       if: steps.organize.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true' && !cancelled()
       run: |
-        release_tag="X86_64-Sch-${{ env.FIRMWARE_VERSION }}"
+        release_tag="X86_64-Sch"
         echo "编译时间：${{ env.START_DATE }}" >> release.txt
         echo "默认网关：192.168.3.1" >> release.txt
         echo "默认密码：password" >> release.txt
