@@ -31,8 +31,7 @@ FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
 - 说明配置正确
 
 ## 注意
-- UA2F可能会与科学上网插件冲突，因此要做好取舍。具体表现为80端口修改失效，其它部分端口正常
-- UA2F也可能会和mwan3冲突，也不要开启Flow Offloading加速以及其他QoS工具
+- UA2F可能会与科学上网、负载均衡mwan3、Flow Offloading加速、硬件NAT加速、QOS限速等插件发生冲突
 - 由于微信mmtls协议的影响，可能会导致微信图片无法发送，如有需要请关闭处理微信的mmtls
 - 建立NTP服务器统一时间戳防时钟偏移检测这种方案并不完善，设备在接入网络后可能更新时间不及时，所以建议手动触发更新时间
 
