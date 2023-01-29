@@ -10,15 +10,16 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
     - name: 删除任务
-      uses: FunctionXJB/delete-workflow-runs@main
+      uses: Mattraks/delete-workflow-runs@v2
       with:
-        retain_days: 1
-        keep_minimum_runs: 1
+        token: ${{ secrets.GITHUB_TOKEN }}
+        retain_days: 10
+        keep_minimum_runs: 2
 
     - name: 移除旧项目
-      uses: dev-drprasad/delete-older-releases@v0.1.0
+      uses: dev-drprasad/delete-older-releases@v0.2.0
       with:
-        keep_latest: 5
-        delete_tags: true
+        keep_latest: 4
+        delete_tag: true
       env:
-        GITHUB_TOKEN: ${{ secrets.GIT_USER_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
