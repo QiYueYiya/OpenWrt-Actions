@@ -11,7 +11,6 @@
 | [X86_64-Sch](https://github.com/QiYueYiya/OpenWrt-Actions/tree/main/X86_64-Sch) | [![](https://github.com/QiYueYiya/OpenWrt-Actions/actions/workflows/X86_64-Sch.yml/badge.svg)](https://github.com/QiYueYiya/OpenWrt-Actions/actions/workflows/X86_64-Sch.yml) | [Config](https://github.com/QiYueYiya/OpenWrt-Actions/blob/main/X86_64-Sch/.config) | [软件源](https://github.com/QiYueYiya/OpenWrt-Actions/blob/main/X86_64-Sch/files/etc/opkg/distfeeds.conf) | [下载链接](https://github.com/QiYueYiya/OpenWrt-Actions/releases/tag/X86_64-Sch) |
 
 ## 一键升级固件
-230129以下的固件请不要使用
 ```bash
 bash <(curl -sSL https://raw.gh.fakev.cn/QiYueYiya/OpenWrt-Actions/main/update.sh)
 ```
