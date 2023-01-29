@@ -3,7 +3,7 @@ name: Remove
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 16 L * *'
+    - cron: '0 20 * * 4'
 
 jobs:
   Delete-Workflow:
