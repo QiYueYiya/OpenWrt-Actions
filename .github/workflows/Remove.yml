@@ -12,5 +12,5 @@ jobs:
     - name: 删除工作流
       uses: FunctionXJB/delete-workflow-runs@main
       with:
-        retain_days: 10
+        retain_days: 2
         keep_minimum_runs: 1
