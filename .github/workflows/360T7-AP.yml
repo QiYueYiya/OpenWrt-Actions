@@ -107,6 +107,7 @@ jobs:
         rm -rf *rootfs*
         rm -rf *kernel*
         rm -rf *.manifest
+        rm -rf feeds.buildinfo
         mv *sysupgrade.bin 360T7-AP-108M-sysupgrade.bin
         mv *factory.bin 360T7-AP-108M-factory.bin
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV

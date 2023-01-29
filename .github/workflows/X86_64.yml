@@ -107,6 +107,7 @@ jobs:
         rm -rf *rootfs*
         rm -rf *kernel*
         rm -rf *.manifest
+        rm -rf feeds.buildinfo
         mv *combined.img.gz X86_64-squashfs.img.gz
         mv *combined-efi.img.gz X86_64-squashfs-efi.img.gz
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
