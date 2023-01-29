@@ -20,7 +20,7 @@ bash <(curl -sSL https://raw.gh.fakev.cn/QiYueYiya/OpenWrt-Actions/main/update.s
 bash <(curl -sSL https://raw.gh.fakev.cn/QiYueYiya/OpenWrt-Actions/main/ua2f.sh)
 ```
 
-## 验证
+### 验证
 - 进行测试时请确保你没用使用任何VPN代理，因为VPN代理会加密流量进而导致UA2F不会去修改加密请求的UA
 - 只需要关注“如果你的真实UA是(服务器获取的 UA)”，下面的“你的浏览器UA是”无需关注
 - 访问：[UA检测-HTTP](http://ua.233996.xyz/)，如果你的真实UA是(服务器获取的 UA)：
@@ -29,7 +29,7 @@ FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
 ```
 - 说明配置正确
 
-## 注意
+### 注意
 - UA2F可能会与科学上网、负载均衡mwan3、Flow Offloading加速、硬件NAT加速、QOS限速等插件发生冲突
 - 由于微信mmtls协议的影响，可能会导致微信图片无法发送，如有需要请关闭处理微信的mmtls
 - 建立NTP服务器统一时间戳防时钟偏移检测这种方案并不完善，设备在接入网络后可能更新时间不及时，所以建议手动触发更新时间
