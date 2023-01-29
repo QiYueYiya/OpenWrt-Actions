@@ -12,5 +12,6 @@ jobs:
     - name: 删除工作流
       uses: Mattraks/delete-workflow-runs@v2
       with:
-        retain_days: 15
+        retain_days: 1
         keep_minimum_runs: 1
+        delete_workflow_pattern: ${{ github.event.inputs.delete_workflow_pattern }}
