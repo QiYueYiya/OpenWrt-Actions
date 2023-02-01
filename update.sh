@@ -20,11 +20,11 @@ if [ $latest -gt $version ] ;then
     echo "检测到新版本！开始下载固件"
     url="https://gh-proxy.com/https://github.com/QiYueYiya/OpenWrt-Actions/releases/download"
     dir=$(cd $(dirname $0);pwd)
-    wget -O $dir/file.sha256 "$url/$model_name/sha256sums"
+    wget -O $dir/sha256sums "$url/$model_name/sha256sums"
     wget -O $dir/$model_file "$url/$model_name/$model_file"
     echo "开始校验文件哈希值"
     sleep 2
-    if cat $dir/file.sha256 | grep $model_file | sha256sum -cs ;then
+    if cat $dir/sha256sums | grep $model_file | sha256sum -cs ;then
         echo "哈希值校验通过，开始升级"
         sysupgrade -c $dir/$model_file
     else
