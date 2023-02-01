@@ -108,8 +108,10 @@ jobs:
         rm -rf *kernel*
         rm -rf *.manifest
         rm -rf feeds.buildinfo
+        rm -rf sha256sums
         mv *sysupgrade.bin 360T7-AP-${{ env.FIRMWARE_VERSION }}-sysupgrade.bin
         mv *factory.bin 360T7-AP-${{ env.FIRMWARE_VERSION }}-factory.bin
+        echo -e "$(sha256sum *)\n" > sha256sums
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
 

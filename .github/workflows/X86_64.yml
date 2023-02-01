@@ -108,8 +108,10 @@ jobs:
         rm -rf *kernel*
         rm -rf *.manifest
         rm -rf feeds.buildinfo
+        rm -rf sha256sums
         mv *combined.img.gz X86_64-${{ env.FIRMWARE_VERSION }}-squashfs.img.gz
         mv *combined-efi.img.gz X86_64-${{ env.FIRMWARE_VERSION }}-squashfs-efi.img.gz
+        echo -e "$(sha256sum *)\n" > sha256sums
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
 
