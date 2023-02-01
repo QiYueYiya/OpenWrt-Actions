@@ -12,12 +12,12 @@
 
 ## 一键升级固件
 ```bash
-bash <(curl -sSL https://gh-proxy.com/https://raw.githubusercontent.com/QiYueYiya/OpenWrt-Actions/main/update.sh)
+bash <(curl -sSL https://raw.nuaa.cf/QiYueYiya/OpenWrt-Actions/main/update.sh)
 ```
 
 ## 一键配置UA2F
 ```bash
-bash <(curl -sSL https://gh-proxy.com/https://raw.githubusercontent.com/QiYueYiya/OpenWrt-Actions/main/ua2f.sh)
+bash <(curl -sSL https://raw.nuaa.cf/QiYueYiya/OpenWrt-Actions/main/ua2f.sh)
 ```
 
 ### 验证
