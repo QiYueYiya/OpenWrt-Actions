@@ -10,7 +10,7 @@ elif [ "$model_name" == "X86_64-Sch" ] ;then
     [ -d /sys/firmware/efi ] && model_file="squashfs-efi.img.gz" || model_file="squashfs.img.gz"
 fi
 version=`cat /etc/openwrt_release | grep "DESCRIPTION" | sed "s/.*DESCRIPTION='.*\s\(\d*\)'/\1/g"`
-latest=`curl -sSL "https://gh-proxy.com/https://api.github.com/repos/QiYueYiya/OpenWrt-Actions/releases/tags/$model_name" | grep "name.*$model_name-\d\d\d\d\d\d\"" | sed "s/.*$model_name-\(\d\d\d\d\d\d\).*/\1/g"`
+latest=`curl -sSL "https://api.github.com/repos/QiYueYiya/OpenWrt-Actions/releases/tags/$model_name" | grep "name.*$model_name-\d\d\d\d\d\d\"" | sed "s/.*$model_name-\(\d\d\d\d\d\d\).*/\1/g"`
 echo "设备型号：$model_name"
 echo "当前版本：$version"
 echo "云端版本：$latest"
