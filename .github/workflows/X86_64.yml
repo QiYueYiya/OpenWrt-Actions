@@ -123,7 +123,7 @@ jobs:
 
     - name: 创建release标签
       id: tag
-      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
+      if: steps.organize.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true' && !cancelled()
       run: |
         release_tag="X86_64"
         echo "编译时间：${{ env.START_DATE }}" >> release.txt
