@@ -20,6 +20,7 @@ rm -rf feeds/luci/applications/luci-app-argon-config
 # 添加额外软件包
 git clone --depth 1 https://github.com/kongfl888/luci-app-adguardhome package/luci-app-adguardhome
 git clone --depth 1 -b lede https://github.com/pymumu/luci-app-smartdns package/luci-app-smartdns
+git clone --depth 1 https://github.com/xiaorouji/openwrt-passwall.git package/passwall
 svn co https://github.com/xiaorouji/openwrt-passwall/branches/luci/luci-app-passwall package/luci-app-passwall
 
 # 主题

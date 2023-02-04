@@ -22,6 +22,7 @@ git clone --depth 1 https://github.com/Zxilly/UA2F package/UA2F
 git clone --depth 1 https://github.com/CHN-beta/rkp-ipid package/rkp-ipid
 git clone --depth 1 https://github.com/kongfl888/luci-app-adguardhome package/luci-app-adguardhome
 git clone --depth 1 -b lede https://github.com/pymumu/luci-app-smartdns package/luci-app-smartdns
+git clone --depth 1 https://github.com/haiibo/OpenWrt.git package/passwall
 svn co https://github.com/xiaorouji/openwrt-passwall/branches/luci/luci-app-passwall package/luci-app-passwall
 
 # 主题
