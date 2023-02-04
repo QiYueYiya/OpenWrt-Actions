@@ -117,6 +117,7 @@ jobs:
 
     - name: 上传固件到Github Action空间
       uses: actions/upload-artifact@main
+      continue-on-error: true
       with:
         name: X86_64-${{ env.FIRMWARE_VERSION }}
         path: ${{ env.FIRMWARE }}

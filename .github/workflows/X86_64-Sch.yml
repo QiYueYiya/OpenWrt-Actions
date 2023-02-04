@@ -25,7 +25,6 @@ env:
   UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
   PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
-  OPKG_URL:  ${{ secrets.OPKG_URL }}
   TZ: Asia/Shanghai
 
 jobs:
@@ -118,7 +117,6 @@ jobs:
 
     - name: 上传固件到Github Action空间
       uses: actions/upload-artifact@main
-      if: steps.organize.outputs.status == 'success' && !cancelled()
       continue-on-error: true
       with:
         name: X86_64-Sch-${{ env.FIRMWARE_VERSION }}
