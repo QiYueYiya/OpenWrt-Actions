@@ -17,3 +17,8 @@ sed -i 's/255.255.255.0/255.255.0.0/g' package/base-files/files/bin/config_gener
 sed -i "s/hostname='OpenWrt'/hostname='Pardofelis'/g" package/base-files/files/bin/config_generate
 sed -i "s/DISTRIB_DESCRIPTION=.*/DISTRIB_DESCRIPTION='QiYueYi $(date +"%y%m%d")'/g" package/base-files/files/etc/openwrt_release
 echo "DISTRIB_MODEL='X86_64'" >> package/base-files/files/etc/openwrt_release
+target=$(grep -m 1 "CONFIG_TARGET_.*=y" .config | sed "s/CONFIG_TARGET_\(.*\)=y/\1/g")
+sed -i "s/luci-app-[A-z-]*\s//g" target/linux/$target/Makefile
+sed -i "s/ddns-scripts_[A-z]*\s/\1/g" target/linux/$target/Makefile
+sed -i "s/\(KERNEL_PATCHVER:=\).*/\15.15/g" target/linux/$target/Makefile
+sed -i "s/\(KERNEL_TESTING_PATCHVER:=\).*/\15.19/g" target/linux/$target/Makefile

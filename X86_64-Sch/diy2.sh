@@ -20,6 +20,11 @@ echo "DISTRIB_MODEL='X86_64-Sch'" >> package/base-files/files/etc/openwrt_releas
 sed -i 's/services/vpn/g' feeds/luci/applications/luci-app-v2ray-server/luasrc/controller/*.lua
 sed -i 's/services/vpn/g' feeds/luci/applications/luci-app-v2ray-server/luasrc/model/cbi/v2ray_server/*.lua
 sed -i 's/services/vpn/g' feeds/luci/applications/luci-app-v2ray-server/luasrc/view/v2ray_server/*.htm
+target=$(grep -m 1 "CONFIG_TARGET_.*=y" .config | sed "s/CONFIG_TARGET_\(.*\)=y/\1/g")
+sed -i "s/luci-app-[A-z-]*\s//g" target/linux/$target/Makefile
+sed -i "s/ddns-scripts_[A-z]*\s/\1/g" target/linux/$target/Makefile
+sed -i "s/\(KERNEL_PATCHVER:=\).*/\15.15/g" target/linux/$target/Makefile
+sed -i "s/\(KERNEL_TESTING_PATCHVER:=\).*/\15.19/g" target/linux/$target/Makefile
 subtarget=$(grep -m 1 "CONFIG_TARGET_.*_.*=y" .config | sed "s/CONFIG_TARGET_\(.*\)_\(.*\)=y/\1\/\2/g")
 for configFile in $(ls target/linux/$subtarget/config*)
 do
