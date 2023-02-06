@@ -67,6 +67,7 @@ jobs:
     - name: 加载软件源
       run: |
         [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
+        sed -i "s|github.com/QiYueYiya|${{ env.TOKEN }}@github.com/QiYueYiya|g" $DIY_P1_SH
         chmod +x $DIY_P1_SH
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P1_SH
@@ -113,8 +114,8 @@ jobs:
         rm -rf *.manifest
         rm -rf feeds.buildinfo
         rm -rf sha256sums
-        # mv *combined.img* X86_64-${{ env.FIRMWARE_VERSION }}-squashfs.img.gz || echo 没有找到 *combined.img* 文件
-        # mv *combined-efi.img* X86_64-${{ env.FIRMWARE_VERSION }}-squashfs-efi.img.gz || echo 没有找到 *combined-efi.img* 文件
+        mv *combined.img* X86_64-${{ env.FIRMWARE_VERSION }}-squashfs.img.gz || echo 没有找到 *combined.img* 文件
+        mv *combined-efi.img* X86_64-${{ env.FIRMWARE_VERSION }}-squashfs-efi.img.gz || echo 没有找到 *combined-efi.img* 文件
         echo -e "$(sha256sum *)\n" > sha256sums
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT

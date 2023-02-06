@@ -18,6 +18,7 @@
 git clone --depth 1 https://github.com/Zxilly/UA2F package/UA2F
 git clone --depth 1 https://github.com/pymumu/openwrt-smartdns.git package/smartdns
 git clone --depth 1 -b lede https://github.com/pymumu/luci-app-smartdns.git package/luci-app-smartdns
+svn co https://github.com/Hyy2001X/AutoBuild-Packages/trunk/luci-app-adguardhome package/luci-app-adguardhome
 svn co https://github.com/xiaorouji/openwrt-passwall/trunk/tcping package/tcping
 
 # 主题

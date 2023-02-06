@@ -17,15 +17,8 @@
 # 软件包
 git clone --depth 1 https://github.com/pymumu/openwrt-smartdns.git package/smartdns
 git clone --depth 1 -b lede https://github.com/pymumu/luci-app-smartdns.git package/luci-app-smartdns
-wget -O openwrt-passwall-8728dabfb69da30fd52dd71c47fb4ce3ee49cbff.zip https://github.com/xiaorouji/openwrt-passwall/archive/8728dabfb69da30fd52dd71c47fb4ce3ee49cbff.zip
-wget -O openwrt-passwall-d6fc247a56b12dc521329100535b6e6154bb05a0.zip https://github.com/xiaorouji/openwrt-passwall/archive/d6fc247a56b12dc521329100535b6e6154bb05a0.zip
-mkdir package/passwall
-for configFile in $(find *.zip|sed "s/.zip//g")
-do
-    unzip -q $configFile
-    mv $configFile/* package/passwall/
-    rm -rf $configFile*
-done
+git clone --depth 1 https://github.com/QiYueYiya/passwall.git package/passwall
+git clone --depth 1 -b luci https://github.com/QiYueYiya/passwall.git package/luci-app-passwall
 
 # 主题
 git clone --depth 1 -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git package/luci-theme-argon
