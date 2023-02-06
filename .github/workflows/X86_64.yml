@@ -25,6 +25,7 @@ env:
   UPLOAD_FIRMWARE: false
   UPLOAD_RELEASE: true
   PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
+  TOKEN: ${{ secrets.TOKEN }}
   TZ: Asia/Shanghai
 
 jobs:

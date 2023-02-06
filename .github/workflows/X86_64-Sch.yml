@@ -25,6 +25,7 @@ env:
   UPLOAD_FIRMWARE: false
   UPLOAD_RELEASE: true
   PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
+  TOKEN: ${{ secrets.TOKEN }}
   TZ: Asia/Shanghai
 
 jobs:
@@ -67,6 +68,7 @@ jobs:
     - name: 加载软件源
       run: |
         [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
+        sed -i "s|github.com/QiYueYiya|${{ env.TOKEN }}@github.com/QiYueYiya|g" $DIY_P1_SH
         chmod +x $DIY_P1_SH
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P1_SH
