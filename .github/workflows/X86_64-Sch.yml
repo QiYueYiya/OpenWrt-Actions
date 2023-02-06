@@ -17,7 +17,7 @@ on:
 
 env:
   REPO_URL: https://github.com/coolsnowwolf/lede
-  REPO_BRANCH: master
+  REPO_BRANCH: 20221001
   FEEDS_CONF: X86_64-Sch/feeds.conf.default
   CONFIG_FILE: X86_64-Sch/.config
   DIY_P1_SH: X86_64-Sch/diy1.sh
@@ -92,7 +92,7 @@ jobs:
       run: |
         cd openwrt
         echo -e "$(nproc) thread compile"
-        make -j$(nproc) || make -j1 || make -j1 V=s || (curl -k -d "title=X86_64-Sch固件编译失败" -d "content=编译固件版本：${{ env.FIRMWARE_VERSION }}%0A编译开始时间：${{ env.START_DATE }}%0A编译结束时间：$(date +'%Y年%m月%d日 %H点%M分')" -d "token=${{ env.PUSHPLUS_TOKEN }}&channel=cp&webhook=server" "http://www.pushplus.plus/send")
+        make -j$(nproc) || make -j1 V=s || (curl -k -d "title=X86_64-Sch固件编译失败" -d "content=编译固件版本：${{ env.FIRMWARE_VERSION }}%0A编译开始时间：${{ env.START_DATE }}%0A编译结束时间：$(date +'%Y年%m月%d日 %H点%M分')" -d "token=${{ env.PUSHPLUS_TOKEN }}&channel=cp&webhook=server" "http://www.pushplus.plus/send")
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: 整理固件
@@ -109,8 +109,8 @@ jobs:
         rm -rf *.manifest
         rm -rf feeds.buildinfo
         rm -rf sha256sums
-        # mv *combined.img* X86_64-Sch-${{ env.FIRMWARE_VERSION }}-squashfs.img.gz
-        # mv *combined-efi.img* X86_64-Sch-${{ env.FIRMWARE_VERSION }}-squashfs-efi.img.gz
+        # mv *combined.img* X86_64-Sch-${{ env.FIRMWARE_VERSION }}-squashfs.img.gz || echo 没有找到 *combined.img* 文件
+        # mv *combined-efi.img* X86_64-Sch-${{ env.FIRMWARE_VERSION }}-squashfs-efi.img.gz || echo 没有找到 *combined-efi.img* 文件
         echo -e "$(sha256sum *)\n" > sha256sums
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
