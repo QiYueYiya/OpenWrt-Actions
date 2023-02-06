@@ -22,5 +22,3 @@ sed -i "s/DISTRIB_DESCRIPTION=.*/DISTRIB_DESCRIPTION='QiYueYi $(date +"%y%m%d")'
 echo "DISTRIB_MODEL='X86_64'" >> package/base-files/files/etc/openwrt_release
 # 调整 x86 型号只显示 CPU 型号
 sed -i 's/${g}.*/${a}${b}${c}${d}${e}${f}/g' package/lean/autocore/files/x86/autocore
-# 修改upx commit hash
-sed -i "s/a46b63817a9c6ad5af7cf519332e859f11558592/1050de5171f70fd4ba113016e4db994e898c7be3/g" package/lean/upx/Makefile
