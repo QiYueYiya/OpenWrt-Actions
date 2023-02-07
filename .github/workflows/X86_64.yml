@@ -137,8 +137,8 @@ jobs:
         echo "默认网关：172.16.1.1" >> release.txt
         echo "默认密码：password" >> release.txt
         echo 包含插件：$(grep "CONFIG_PACKAGE_luci-app-\(.*\)=y" openwrt/.config | sed "s/CONFIG_PACKAGE_luci-app-\(.*\)=y/\1/g" | grep -v "_\|arpbind\|autoreboot\|firewall") >> release.txt
-        echo -e "BIOS升级命令：\n```\nsysupgrade -c https://hub.nuaa.cf/QiYueYiya/OpenWrt-Actions/releases/download/${{ release_tag }}/${{ release_tag }}-squashfs.img.gz\n```" >> release.txt
-        echo -e "UEFI升级命令：\n```\nsysupgrade -c https://hub.nuaa.cf/QiYueYiya/OpenWrt-Actions/releases/download/${{ release_tag }}/${{ release_tag }}-squashfs-efi.img.gz)\n```" >> release.txt
+        echo -e "BIOS升级命令：\n```\nsysupgrade -c https://hub.nuaa.cf/QiYueYiya/OpenWrt-Actions/releases/download/$release_tag/$release_tag-squashfs.img.gz\n```" >> release.txt
+        echo -e "UEFI升级命令：\n```\nsysupgrade -c https://hub.nuaa.cf/QiYueYiya/OpenWrt-Actions/releases/download/$release_tag/$release_tag-squashfs-efi.img.gz)\n```" >> release.txt
         echo "release_tag=$release_tag" >> $GITHUB_OUTPUT
         echo "status=success" >> $GITHUB_OUTPUT
 
