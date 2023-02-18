@@ -3,7 +3,7 @@
 hnat_path="/sys/kernel/debug/hnat/hook_toggle"
 [ -e $hnat_path ] && echo "关闭硬件加速中"
 [ -e $hnat_path ] && echo 0 > $hnat_path
-[ -e $hnat_path ] && (grep hook_toggle /etc/rc.local && echo '硬件加速已关闭！' || sed -i '$i sleep 5 && echo 0 > /sys/kernel/debug/hnat/hook_toggle' /etc/rc.local)
+[ -e $hnat_path ] && (grep hook_toggle /etc/rc.local && echo '硬件加速已关闭！' || sed -i "3a\echo 0 > /sys/kernel/debug/hnat/hook_toggle" /mnt/sdb1/ua2f)
 ##############################################
 echo "设置防火墙规则中"
 echo "# 修改TTL值为128" >> /etc/firewall.user
