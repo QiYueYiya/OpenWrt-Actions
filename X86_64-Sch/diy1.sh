@@ -18,7 +18,7 @@
 git clone --depth 1 https://github.com/Zxilly/UA2F package/UA2F
 git clone --depth 1 https://github.com/pymumu/openwrt-smartdns.git package/smartdns
 git clone --depth 1 -b lede https://github.com/pymumu/luci-app-smartdns.git package/luci-app-smartdns
-git clone --depth 1 -b patches-v2ray-geosite-20230204071506 https://github.com/xiaorouji/openwrt-passwall.git package/passwall
+git clone --depth 1 -b packages https://github.com/xiaorouji/openwrt-passwall.git package/passwall
 git clone --depth 1 -b luci https://github.com/xiaorouji/openwrt-passwall.git package/luci-app-passwall
 svn co https://github.com/Hyy2001X/AutoBuild-Packages/trunk/luci-app-adguardhome package/luci-app-adguardhome
 
