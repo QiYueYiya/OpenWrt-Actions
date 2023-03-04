@@ -12,8 +12,8 @@ name: X86_64-Sch
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 0 1 * *'
+  # schedule:
+  #   - cron: '0 0 1 * *'
 
 env:
   REPO_URL: https://github.com/coolsnowwolf/lede
