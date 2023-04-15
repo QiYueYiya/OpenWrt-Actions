@@ -16,13 +16,13 @@ on:
   #   - cron: '0 0 1 * *'
 
 env:
-  REPO_URL: https://github.com/hanwckf/immortalwrt-mt798x
-  REPO_BRANCH: openwrt-21.02
+  REPO_URL: https://github.com/padavanonly/immortalwrtARM
+  REPO_BRANCH: mt7981
   FEEDS_CONF: 360T7-AP/feeds.conf.default
   CONFIG_FILE: 360T7-AP/.config
   DIY_P1_SH: 360T7-AP/diy1.sh
   DIY_P2_SH: 360T7-AP/diy2.sh
-  UPLOAD_FIRMWARE: false
+  UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
   PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
   TZ: Asia/Shanghai
@@ -61,7 +61,7 @@ jobs:
       working-directory: /workdir
       run: |
         df -hT $PWD
-        git clone $REPO_URL -b $REPO_BRANCH openwrt
+        git clone --single-branch -b $REPO_BRANCH $REPO_URL openwrt
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
 
     - name: 加载软件源
@@ -113,6 +113,7 @@ jobs:
         rm -rf *.manifest
         rm -rf feeds.buildinfo
         rm -rf sha256sums
+        rm -rf *toolchain*
         mv *sysupgrade.bin 360T7-AP-${{ env.FIRMWARE_VERSION }}-sysupgrade.bin || echo 没有找到 *sysupgrade.bin 文件
         mv *factory.bin 360T7-AP-${{ env.FIRMWARE_VERSION }}-factory.bin || echo 没有找到 *factory.bin 文件
         echo -e "$(sha256sum *)\n" > sha256sums
@@ -150,7 +151,7 @@ jobs:
         files: ${{ env.FIRMWARE }}/*
 
     - name: PushPlus 通知
-      if: env.PUSHPLUS_TOKEN
+      if: env.PUSHPLUS_TOKEN && !cancelled()
       continue-on-error: true
       run: |
         curl -k -d "title=360T7-AP固件编译成功" -d "content=编译固件版本：${{ env.FIRMWARE_VERSION }}%0A编译开始时间：${{ env.START_DATE }}%0A编译结束时间：$(date +'%Y年%m月%d日 %H点%M分')" -d "token=${{ env.PUSHPLUS_TOKEN }}&channel=cp&webhook=server" "http://www.pushplus.plus/send"

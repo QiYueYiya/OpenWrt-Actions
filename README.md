@@ -33,7 +33,7 @@ FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
 ## 参考
 - [P3TERX](https://github.com/P3TERX/Actions-OpenWrt)
 - [hanwckf](https://github.com/hanwckf/immortalwrt-mt798x)
-- [padavanonly](https://github.com/padavanonly/immortalwrtARM)
+- [padavanonly](https://github.com/padavanonly/immortalwrtARM/tree/mt7981)
 - [immortalwrt](https://github.com/immortalwrt/immortalwrt)
 - [coolsnowwolf](https://github.com/coolsnowwolf/lede)
 - [UA2F](https://github.com/Zxilly/UA2F)
