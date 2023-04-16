@@ -22,7 +22,7 @@ env:
   CONFIG_FILE: X86_64/.config
   DIY_P1_SH: X86_64/diy1.sh
   DIY_P2_SH: X86_64/diy2.sh
-  UPLOAD_FIRMWARE: false
+  UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
   PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
   TOKEN: ${{ secrets.TOKEN }}
