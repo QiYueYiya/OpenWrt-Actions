@@ -11,6 +11,9 @@
 name: 360T7
 
 on:
+  push:
+    paths:
+      - '360T7/.config'
   workflow_dispatch:
   # schedule:
   #   - cron: '0 0 1 * *'

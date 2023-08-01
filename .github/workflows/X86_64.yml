@@ -11,6 +11,9 @@
 name: X86_64
 
 on:
+  push:
+    paths:
+      - 'X86_64/.config'
   workflow_dispatch:
   # schedule:
   #   - cron: '0 0 1 * *'
