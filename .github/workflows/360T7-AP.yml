@@ -134,11 +134,10 @@ jobs:
       id: tag
       if: steps.organize.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true' && !cancelled()
       run: |
-        release_tag="360T7-AP"
+        release_tag="360T7-AP-${{ env.FIRMWARE_VERSION }}"
         echo "编译时间：${{ env.START_DATE }}" >> release.txt
         echo "默认地址：172.16.0.2" >> release.txt
         echo 包含插件：$(grep "CONFIG_PACKAGE_luci-app-\(.*\)=y" openwrt/.config | sed "s/CONFIG_PACKAGE_luci-app-\(.*\)=y/\1/g" | grep -v "_\|arpbind\|autoreboot\|firewall\|mtk\|opkg") >> release.txt
-        echo -e "升级命令：\n\`\`\`\nsysupgrade -c https://qiyueyi.eu.org/https://github.com/QiYueYiya/OpenWrt-Actions/releases/download/$release_tag/$release_tag-${{ env.FIRMWARE_VERSION }}-sysupgrade.bin\n\`\`\`" >> release.txt
         echo "release_tag=$release_tag" >> $GITHUB_OUTPUT
         echo "status=success" >> $GITHUB_OUTPUT
 
