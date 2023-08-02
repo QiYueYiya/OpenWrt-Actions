@@ -28,7 +28,6 @@ env:
   UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
   PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
-  TOKEN: ${{ secrets.TOKEN }}
   TZ: Asia/Shanghai
 
 jobs:
@@ -44,7 +43,6 @@ jobs:
         DEBIAN_FRONTEND: noninteractive
       run: |
         sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
-        sudo sed -i "s|http://.*/ubuntu|http://mirror.cs.umn.edu/ubuntu|g" /etc/apt/sources.list
         sudo -E apt-get -qq update
         sudo -E apt-get -qq install $(curl -fsSL git.io/depends-ubuntu-2004)
         sudo -E apt-get -qq autoremove --purge
@@ -53,11 +51,10 @@ jobs:
         sudo mkdir -p /workdir
         sudo chown $USER:$GROUPS /workdir
         echo "FIRMWARE_VERSION=$(date +"%y%m%d")" >> $GITHUB_ENV
-        echo "START_DATE=$(date +'%Y年%m月%d日 %H点%M分')" >> $GITHUB_ENV
+        echo "START_DATE=$(date +%s)" >> $GITHUB_ENV
 
     - name: PushPlus 通知
       if: env.PUSHPLUS_TOKEN
-      continue-on-error: true
       run: |
         curl -k -d "title=开始编译X86_64固件" -d "content=编译固件版本：${{ env.FIRMWARE_VERSION }}%0A编译开始时间：${{ env.START_DATE }}" -d "token=${{ env.PUSHPLUS_TOKEN }}&channel=cp&webhook=server" "http://www.pushplus.plus/send"
     
@@ -65,7 +62,7 @@ jobs:
       working-directory: /workdir
       run: |
         df -hT $PWD
-        git clone $REPO_URL -b $REPO_BRANCH openwrt
+        git clone --single-branch -b $REPO_BRANCH $REPO_URL openwrt
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
 
     - name: 加载软件源
@@ -100,15 +97,20 @@ jobs:
       run: |
         cd openwrt
         echo -e "$(nproc) thread compile"
-        make -j$(nproc) || make -j1 V=s || (curl -k -d "title=X86_64固件编译失败" -d "content=编译固件版本：${{ env.FIRMWARE_VERSION }}%0A编译开始时间：${{ env.START_DATE }}%0A编译结束时间：$(date +'%Y年%m月%d日 %H点%M分')" -d "token=${{ env.PUSHPLUS_TOKEN }}&channel=cp&webhook=server" "http://www.pushplus.plus/send")
+        make -j$(nproc) || make -j1 V=s || (duration=$(( ($(date +%s) - ${{ env.START_DATE }}) / 60 )) && time=$(( duration / 60 ))小时$(( duration % 60 ))分钟 && curl -k -d "title=X86_64固件编译失败" -d "content=固件版本：${{ env.FIRMWARE_VERSION }}%0A编译用时：${time}" -d "token=${{ env.PUSHPLUS_TOKEN }}&channel=cp&webhook=server" "http://www.pushplus.plus/send")
         echo "status=success" >> $GITHUB_OUTPUT
 
-    - name: 整理固件
+    - name: 整理文件
       id: organize
       if: steps.compile.outputs.status == 'success' && !cancelled()
       run: |
         # 整理固件包时候,删除您不想要的固件或者文件,让它不需要上传到Actions空间
         cd openwrt/bin/targets/*/*
+        mkdir -p package
+        mv packages package/core
+        mv package packages
+        mv $GITHUB_WORKSPACE/openwrt/bin/packages/*/* packages
+        tar -czf packages.tar.gz packages
         rm -rf packages
         rm -rf version.buildinfo
         rm -rf profiles.json
@@ -123,8 +125,9 @@ jobs:
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
 
-    - name: 上传固件到Github Action空间
-      if: env.UPLOAD_FIRMWARE == 'true' 
+    - name: 上传固件到Github Actions空间
+      if: steps.organize.outputs.status == 'success' && env.UPLOAD_FIRMWARE == 'true'
+      continue-on-error: true 
       uses: actions/upload-artifact@main
       with:
         name: X86_64-${{ env.FIRMWARE_VERSION }}
@@ -135,7 +138,7 @@ jobs:
       if: steps.organize.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true' && !cancelled()
       run: |
         release_tag="X86_64-${{ env.FIRMWARE_VERSION }}"
-        echo "编译时间：${{ env.START_DATE }}" >> release.txt
+        echo "编译时间：$(date -d "@${{ env.START_DATE }}" +"%Y年%m月%d日 %H点%M分")" >> release.txt
         echo "默认网关：172.16.1.1" >> release.txt
         echo "默认密码：password" >> release.txt
         echo 包含插件：$(grep "CONFIG_PACKAGE_luci-app-\(.*\)=y" openwrt/.config | sed "s/CONFIG_PACKAGE_luci-app-\(.*\)=y/\1/g" | grep -v "_\|arpbind\|autoreboot\|firewall") >> release.txt
@@ -145,8 +148,10 @@ jobs:
     - name: 将固件上传到release
       uses: softprops/action-gh-release@v1
       if: steps.tag.outputs.status == 'success' && !cancelled()
+      continue-on-error: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      id: upload-release
       with:
         name: X86_64-${{ env.FIRMWARE_VERSION }}
         tag_name: ${{ steps.tag.outputs.release_tag }}
@@ -155,7 +160,7 @@ jobs:
 
     - name: PushPlus 通知
       if: env.PUSHPLUS_TOKEN
-      continue-on-error: true
       run: |
-        curl -k -d "title=X86_64固件编译成功" -d "content=编译固件版本：${{ env.FIRMWARE_VERSION }}%0A编译开始时间：${{ env.START_DATE }}%0A编译结束时间：$(date +'%Y年%m月%d日 %H点%M分')" -d "token=${{ env.PUSHPLUS_TOKEN }}&channel=cp&webhook=server" "http://www.pushplus.plus/send"
+        duration=$(( ($(date +%s) - ${{ env.START_DATE }}) / 60 )) && time=$(( duration / 60 ))小时$(( duration % 60 ))分钟
+        curl -k -d "title=X86_64固件编译成功" -d "content=固件版本：${{ env.FIRMWARE_VERSION }}%0A编译用时：${time}" -d "token=${{ env.PUSHPLUS_TOKEN }}&channel=cp&webhook=server" "http://www.pushplus.plus/send"
 
