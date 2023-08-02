@@ -56,7 +56,7 @@ jobs:
     - name: PushPlus 通知
       if: env.PUSHPLUS_TOKEN
       run: |
-        curl -k -d "title=开始编译X86_64固件" -d "content=编译固件版本：${{ env.FIRMWARE_VERSION }}%0A编译开始时间：${{ env.START_DATE }}" -d "token=${{ env.PUSHPLUS_TOKEN }}&channel=cp&webhook=server" "http://www.pushplus.plus/send"
+        curl -k -d "title=开始编译X86_64固件" -d "content=编译固件版本：${{ env.FIRMWARE_VERSION }}%0A编译开始时间：$(date -d "@${{ env.START_DATE }}" +"%Y年%m月%d日 %H点%M分")" -d "token=${{ env.PUSHPLUS_TOKEN }}&channel=cp&webhook=server" "http://www.pushplus.plus/send"
     
     - name: 下载源码
       working-directory: /workdir
