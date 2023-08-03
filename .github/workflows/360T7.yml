@@ -102,13 +102,13 @@ jobs:
             echo "status=success" >> $GITHUB_OUTPUT
         else
             duration=$(( ($(date +%s) - ${{ env.START_DATE }}) / 60 )) && time=$(( duration / 60 ))小时$(( duration % 60 ))分钟
-            curl -k -d "title=360T7固件编译失败" -d "content=多线程编译失败，尝试单线程编译%0A固件版本：${{ env.FIRMWARE_VERSION }}%0A编译用时：${time}" -d "token=${{ env.PUSHPLUS_TOKEN }}&channel=cp&webhook=server" "http://www.pushplus.plus/send")
+            curl -k -d "title=360T7固件编译失败" -d "content=多线程编译失败，尝试单线程编译%0A固件版本：${{ env.FIRMWARE_VERSION }}%0A编译用时：${time}" -d "token=${{ env.PUSHPLUS_TOKEN }}&channel=cp&webhook=server" "http://www.pushplus.plus/send"
             second_time=$(date +%s)
             if make -j1 V=s; then
                 echo "status=success" >> $GITHUB_OUTPUT
             else
                 duration=$(( ($(date +%s) - ${second_time}) / 60 )) && time=$(( duration / 60 ))小时$(( duration % 60 ))分钟
-                curl -k -d "title=360T7固件编译失败" -d "content=单线程编译失败%0A固件版本：${{ env.FIRMWARE_VERSION }}%0A编译用时：${time}" -d "token=${{ env.PUSHPLUS_TOKEN }}&channel=cp&webhook=server" "http://www.pushplus.plus/send")
+                curl -k -d "title=360T7固件编译失败" -d "content=单线程编译失败%0A固件版本：${{ env.FIRMWARE_VERSION }}%0A编译用时：${time}" -d "token=${{ env.PUSHPLUS_TOKEN }}&channel=cp&webhook=server" "http://www.pushplus.plus/send"
             fi
         fi
 
