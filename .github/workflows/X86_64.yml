@@ -97,8 +97,19 @@ jobs:
       run: |
         cd openwrt
         echo -e "$(nproc) thread compile"
-        make -j$(nproc) || make -j1 V=s || (duration=$(( ($(date +%s) - ${{ env.START_DATE }}) / 60 )) && time=$(( duration / 60 ))小时$(( duration % 60 ))分钟 && curl -k -d "title=X86_64固件编译失败" -d "content=固件版本：${{ env.FIRMWARE_VERSION }}%0A编译用时：${time}" -d "token=${{ env.PUSHPLUS_TOKEN }}&channel=cp&webhook=server" "http://www.pushplus.plus/send")
-        echo "status=success" >> $GITHUB_OUTPUT
+        if make -j$(nproc); then
+            echo "status=success" >> $GITHUB_OUTPUT
+        else
+            duration=$(( ($(date +%s) - ${{ env.START_DATE }}) / 60 )) && time=$(( duration / 60 ))小时$(( duration % 60 ))分钟
+            curl -k -d "title=X86_64固件编译失败" -d "content=多线程编译失败，尝试单线程编译%0A固件版本：${{ env.FIRMWARE_VERSION }}%0A编译用时：${time}" -d "token=${{ env.PUSHPLUS_TOKEN }}&channel=cp&webhook=server" "http://www.pushplus.plus/send")
+            second_time=$(date +%s)
+            if make -j1 V=s; then
+                echo "status=success" >> $GITHUB_OUTPUT
+            else
+                duration=$(( ($(date +%s) - ${second_time}) / 60 )) && time=$(( duration / 60 ))小时$(( duration % 60 ))分钟
+                curl -k -d "title=X86_64固件编译失败" -d "content=单线程编译失败%0A固件版本：${{ env.FIRMWARE_VERSION }}%0A编译用时：${time}" -d "token=${{ env.PUSHPLUS_TOKEN }}&channel=cp&webhook=server" "http://www.pushplus.plus/send")
+            fi
+        fi
 
     - name: 整理文件
       id: organize
@@ -159,7 +170,7 @@ jobs:
         files: ${{ env.FIRMWARE }}/*
 
     - name: PushPlus 通知
-      if: env.PUSHPLUS_TOKEN
+      if: steps.compile.outputs.status == 'success' && env.PUSHPLUS_TOKEN
       run: |
         duration=$(( ($(date +%s) - ${{ env.START_DATE }}) / 60 )) && time=$(( duration / 60 ))小时$(( duration % 60 ))分钟
         curl -k -d "title=X86_64固件编译成功" -d "content=固件版本：${{ env.FIRMWARE_VERSION }}%0A编译用时：${time}" -d "token=${{ env.PUSHPLUS_TOKEN }}&channel=cp&webhook=server" "http://www.pushplus.plus/send"
