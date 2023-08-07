@@ -1,0 +1,1 @@
+sed -i '$a src-git smallpackage https://github.com/kenzok8/small-package' feeds.conf.default
