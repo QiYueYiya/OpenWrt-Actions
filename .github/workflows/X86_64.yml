@@ -12,6 +12,8 @@ name: X86_64
 
 on:
   push:
+    branches:
+      - main
     paths:
       - 'X86_64/.config'
   workflow_dispatch:

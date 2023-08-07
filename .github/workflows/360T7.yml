@@ -12,6 +12,8 @@ name: 360T7
 
 on:
   push:
+    branches:
+      - main
     paths:
       - '360T7/.config'
   workflow_dispatch:
