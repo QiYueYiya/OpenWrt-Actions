@@ -27,7 +27,7 @@ env:
   CONFIG_FILE: 360T7/.config
   DIY_P1_SH: 360T7/diy1.sh
   DIY_P2_SH: 360T7/diy2.sh
-  UPLOAD_FIRMWARE: true
+  UPLOAD_FIRMWARE: false
   UPLOAD_RELEASE: true
   PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
   TZ: Asia/Shanghai
