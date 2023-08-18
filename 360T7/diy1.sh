@@ -13,8 +13,5 @@
 # Uncomment a feed source
 #sed -i 's/^#\(.*helloworld\)/\1/' feeds.conf.default
 git clone --depth 1 https://github.com/kongfl888/luci-app-adguardhome package/luci-app-adguardhome
-git clone --depth 1 https://github.com/QiYueYiya/luci-app-openvpn-server.git package/luci-app-openvpn-server
-./scripts/feeds update -a
-rm -rf feeds/luci/applications/luci-app-openvpn-server
 
 # Add feed sources
