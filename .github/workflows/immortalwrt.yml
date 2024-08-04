@@ -27,7 +27,7 @@ env:
   CONFIG_FILE: immortalwrt/.config
   DIY_P1_SH: immortalwrt/diy1.sh
   DIY_P2_SH: immortalwrt/diy2.sh
-  UPLOAD_FIRMWARE: false
+  UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
   PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
   TZ: Asia/Shanghai
@@ -153,7 +153,7 @@ jobs:
       run: |
         release_tag="immortalwrt-${{ env.FIRMWARE_VERSION }}"
         echo "编译时间：$(date -d "@${{ env.START_DATE }}" +"%Y年%m月%d日 %H点%M分")" >> release.txt
-        echo "默认网关：172.16.1.1" >> release.txt
+        echo "默认网关：192.168.2.1" >> release.txt
         echo "默认密码：password" >> release.txt
         echo 包含插件：$(grep "CONFIG_PACKAGE_luci-app-\(.*\)=y" openwrt/.config | sed "s/CONFIG_PACKAGE_luci-app-\(.*\)=y/\1/g" | grep -v "_\|arpbind\|autoreboot\|firewall") >> release.txt
         echo "release_tag=$release_tag" >> $GITHUB_OUTPUT
