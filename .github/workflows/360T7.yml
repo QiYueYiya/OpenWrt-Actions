@@ -29,7 +29,8 @@ env:
   DIY_P2_SH: 360T7/diy2.sh
   UPLOAD_FIRMWARE: false
   UPLOAD_RELEASE: true
-  PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
+  TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+  TELEGRAM_CHATID: ${{ secrets.TELEGRAM_CHATID }}
   TZ: Asia/Shanghai
 
 jobs:
@@ -45,22 +46,16 @@ jobs:
         DEBIAN_FRONTEND: noninteractive
       run: |
         sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
-        sudo sed -i "s|http://.*/ubuntu|http://mirror.arizona.edu/ubuntu|g" /etc/apt/sources.list
-        sudo -E apt-get -qq update
-        sudo -E apt-get -qq install $(curl -fsSL git.io/depends-ubuntu-2004)
-        sudo -E apt-get -qq autoremove --purge
-        sudo -E apt-get -qq clean
+        sudo apt update
+        sudo bash -c 'bash <(curl -s https://build-scripts.immortalwrt.org/init_build_environment.sh)'
+        sudo apt autoremove --purge
+        sudo apt clean
         sudo timedatectl set-timezone "$TZ"
         sudo mkdir -p /workdir
         sudo chown $USER:$GROUPS /workdir
         echo "FIRMWARE_VERSION=$(date +"%y%m%d")" >> $GITHUB_ENV
         echo "START_DATE=$(date +%s)" >> $GITHUB_ENV
 
-    - name: PushPlus 通知
-      if: env.PUSHPLUS_TOKEN
-      run: |
-        curl -k -d "title=开始编译360T7固件" -d "content=编译固件版本：${{ env.FIRMWARE_VERSION }}%0A编译开始时间：$(date -d "@${{ env.START_DATE }}" +"%Y年%m月%d日 %H点%M分")" -d "token=${{ env.PUSHPLUS_TOKEN }}&channel=cp&webhook=server" "http://www.pushplus.plus/send"
-    
     - name: 下载源码
       working-directory: /workdir
       run: |
@@ -104,13 +99,15 @@ jobs:
             echo "status=success" >> $GITHUB_OUTPUT
         else
             duration=$(( ($(date +%s) - ${{ env.START_DATE }}) / 60 )) && time=$(( duration / 60 ))小时$(( duration % 60 ))分钟
-            curl -k -d "title=360T7固件编译失败" -d "content=多线程编译失败，尝试单线程编译%0A固件版本：${{ env.FIRMWARE_VERSION }}%0A编译用时：${time}" -d "token=${{ env.PUSHPLUS_TOKEN }}&channel=cp&webhook=server" "http://www.pushplus.plus/send"
+            content="360T7固件编译失败%0A多线程编译失败，尝试单线程编译%0A固件版本：${{ env.FIRMWARE_VERSION }}%0A编译用时：${time}"
+            curl "https://api.telegram.org/bot${{ env.TELEGRAM_BOT_TOKEN }}/sendMessage?chat_id=${{ env.TELEGRAM_CHATID }}&text=$content"
             second_time=$(date +%s)
             if make -j1 V=s; then
                 echo "status=success" >> $GITHUB_OUTPUT
             else
                 duration=$(( ($(date +%s) - ${second_time}) / 60 )) && time=$(( duration / 60 ))小时$(( duration % 60 ))分钟
-                curl -k -d "title=360T7固件编译失败" -d "content=单线程编译失败%0A固件版本：${{ env.FIRMWARE_VERSION }}%0A编译用时：${time}" -d "token=${{ env.PUSHPLUS_TOKEN }}&channel=cp&webhook=server" "http://www.pushplus.plus/send"
+                content="360T7固件编译失败%0A单线程编译失败%0A固件版本：${{ env.FIRMWARE_VERSION }}%0A编译用时：${time}"
+                curl "https://api.telegram.org/bot${{ env.TELEGRAM_BOT_TOKEN }}/sendMessage?chat_id=${{ env.TELEGRAM_CHATID }}&text=$content"
             fi
         fi
 
@@ -172,9 +169,9 @@ jobs:
         body_path: release.txt
         files: ${{ env.FIRMWARE }}/*
 
-    - name: PushPlus 通知
-      if: steps.compile.outputs.status == 'success' && env.PUSHPLUS_TOKEN
+    - name: Telegram 通知
+      if: steps.compile.outputs.status == 'success' && env.TELEGRAM_CHATID && env.TELEGRAM_BOT_TOKEN
       run: |
         duration=$(( ($(date +%s) - ${{ env.START_DATE }}) / 60 )) && time=$(( duration / 60 ))小时$(( duration % 60 ))分钟
-        curl -k -d "title=360T7固件编译成功" -d "content=固件版本：${{ env.FIRMWARE_VERSION }}%0A编译用时：${time}" -d "token=${{ env.PUSHPLUS_TOKEN }}&channel=cp&webhook=server" "http://www.pushplus.plus/send"
-        
+        content="360T7固件编译成功%0A固件版本：${{ env.FIRMWARE_VERSION }}%0A编译用时：${time}"
+        curl "https://api.telegram.org/bot${{ env.TELEGRAM_BOT_TOKEN }}/sendMessage?chat_id=${{ env.TELEGRAM_CHATID }}&text=$content"
