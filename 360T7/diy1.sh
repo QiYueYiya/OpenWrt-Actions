@@ -12,8 +12,8 @@
 
 # Uncomment a feed source
 #sed -i 's/^#\(.*helloworld\)/\1/' feeds.conf.default
-git clone --depth 1 https://github.com/kongfl888/luci-app-adguardhome package/luci-app-adguardhome
 git clone --depth 1 https://github.com/tty228/luci-app-wechatpush.git package/luci-app-wechatpush
+git clone --depth 1 https://github.com/kongfl888/luci-app-adguardhome package/luci-app-adguardhome
 find ./ | grep Makefile | grep v2ray-geodata | xargs rm -f
 find ./ | grep Makefile | grep mosdns | xargs rm -f
 git clone --depth 1 https://github.com/sbwml/luci-app-mosdns -b v5 package/mosdns
