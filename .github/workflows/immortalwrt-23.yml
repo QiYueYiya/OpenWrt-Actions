@@ -131,7 +131,7 @@ jobs:
         rm -rf feeds.buildinfo
         rm -rf sha256sums
         for file in immortalwrt*; do
-          mv "$file" "${file/immortalwrt/immortalwrt-23-$env.FIRMWARE_VERSION}"
+          mv "$file" "${file/immortalwrt/immortalwrt-23-${{ env.TELEGRAM_BOT_TOKEN }}}"
         done
         echo -e "$(sha256sum *)\n" > sha256sums
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
