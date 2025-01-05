@@ -145,6 +145,15 @@ jobs:
         name: immortalwrt-23-${{ env.FIRMWARE_VERSION }}
         path: ${{ env.FIRMWARE }}
 
+    - name: 删除旧的发行版
+      uses: dev-drprasad/delete-older-releases@master
+      continue-on-error: true
+      with:
+        keep_latest: 0
+        delete_tags: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     - name: 创建release标签
       id: tag
       if: steps.organize.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true' && !cancelled()
