@@ -149,7 +149,6 @@ jobs:
       id: tag
       if: steps.organize.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true' && !cancelled()
       run: |
-        release_tag="360T7-${{ env.FIRMWARE_VERSION }}"
         echo "编译时间：$(date -d "@${{ env.START_DATE }}" +"%Y年%m月%d日 %H点%M分")" >> release.txt
         echo "默认网关：192.168.3.1" >> release.txt
         echo 包含插件：$(grep "CONFIG_PACKAGE_luci-app-\(.*\)=y" openwrt/.config | sed "s/CONFIG_PACKAGE_luci-app-\(.*\)=y/\1/g" | grep -v "_\|arpbind\|autoreboot\|firewall\|mtk\|opkg") >> release.txt
@@ -165,7 +164,7 @@ jobs:
       id: upload-release
       with:
         name: 360T7-${{ env.FIRMWARE_VERSION }}
-        tag_name: ${{ steps.tag.outputs.release_tag }}
+        tag_name: 360T7
         body_path: release.txt
         files: ${{ env.FIRMWARE }}/*
 
