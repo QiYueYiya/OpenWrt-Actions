@@ -21,13 +21,13 @@ on:
     - cron: '0 0 1 * *'
 
 env:
-  REPO_URL: https://github.com/immortalwrt/immortalwrt.git
+  REPO_URL: https://github.com/dailook/immortalwrt-mt798x-23.05.git
   REPO_BRANCH: openwrt-23.05
   FEEDS_CONF: RAX3000Me/feeds.conf.default
   CONFIG_FILE: RAX3000Me/.config
   DIY_P1_SH: RAX3000Me/diy1.sh
   DIY_P2_SH: RAX3000Me/diy2.sh
-  UPLOAD_FIRMWARE: true
+  UPLOAD_FIRMWARE: false
   UPLOAD_RELEASE: true
   TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
   TELEGRAM_CHATID: ${{ secrets.TELEGRAM_CHATID }}
@@ -125,14 +125,14 @@ jobs:
         rm -rf packages
         rm -rf version.buildinfo
         rm -rf profiles.json
-        # rm -rf *rootfs*
+        rm -rf *rootfs*
         rm -rf *kernel*
         rm -rf *.manifest
         rm -rf feeds.buildinfo
         rm -rf sha256sums
-        for file in immortalwrt*; do
-          mv "$file" "${file/immortalwrt/RAX3000Me-${{ env.FIRMWARE_VERSION }}}"
-        done
+        rm -rf *toolchain*
+        mv *sysupgrade.bin RAX3000Me-${{ env.FIRMWARE_VERSION }}-sysupgrade.bin || echo 没有找到 *sysupgrade.bin 文件
+        mv *factory.bin RAX3000Me-${{ env.FIRMWARE_VERSION }}-factory.bin || echo 没有找到 *factory.bin 文件
         echo -e "$(sha256sum *)\n" > sha256sums
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
@@ -151,7 +151,7 @@ jobs:
       run: |
         echo "编译时间：$(date -d "@${{ env.START_DATE }}" +"%Y年%m月%d日 %H点%M分")" >> release.txt
         echo "默认网关：192.168.3.1" >> release.txt
-        echo 包含插件：$(grep "CONFIG_PACKAGE_luci-app-\(.*\)=y" openwrt/.config | sed "s/CONFIG_PACKAGE_luci-app-\(.*\)=y/\1/g" | grep -v "_\|arpbind\|autoreboot\|firewall") >> release.txt
+        echo 包含插件：$(grep "CONFIG_PACKAGE_luci-app-\(.*\)=y" openwrt/.config | sed "s/CONFIG_PACKAGE_luci-app-\(.*\)=y/\1/g" | grep -v "_\|arpbind\|autoreboot\|firewall\|mtk\|opkg") >> release.txt
         echo "release_tag=$release_tag" >> $GITHUB_OUTPUT
         echo "status=success" >> $GITHUB_OUTPUT
 
