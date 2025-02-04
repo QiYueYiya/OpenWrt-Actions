@@ -15,4 +15,4 @@
 # sed -i '$a src-git small8 https://github.com/kenzok8/small-package' feeds.conf.default
 
 # 软件包
-git clone --depth 1 https://github.com/QiYueYiya/OpenWrt-Actions/tree/luci-app-adguardhome package/luci-app-adguardhome
+git clone --depth 1 -b luci-app-adguardhome https://github.com/QiYueYiya/OpenWrt-Actions package/luci-app-adguardhome
