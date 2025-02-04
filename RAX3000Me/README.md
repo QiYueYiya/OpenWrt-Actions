@@ -18,13 +18,13 @@ echo $mypassword
 ```
 #### 3. 下载开启```Telnet```配置文件
 ```shell
-wget -O https://github.com/QiYueYiya/OpenWrt-Actions/releases/download/RAX3000Me/RAX3000M_XR30_cfg-telnet-20240117.conf
+wget https://github.com/QiYueYiya/OpenWrt-Actions/releases/download/RAX3000Me/RAX3000M_XR30_cfg-telnet-20240117.conf
 ```
 - <details>
     <summary>国内网络下载命令</summary>
 
     ```shell
-    wget -O https://gh.ddlc.top/https://github.com/QiYueYiya/OpenWrt-Actions/releases/download/RAX3000Me/RAX3000M_XR30_cfg-telnet-20240117.conf
+    wget https://gh.ddlc.top/https://github.com/QiYueYiya/OpenWrt-Actions/releases/download/RAX3000Me/RAX3000M_XR30_cfg-telnet-20240117.conf
     ```
     </details>
 
