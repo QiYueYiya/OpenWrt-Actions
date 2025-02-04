@@ -24,7 +24,7 @@ wget https://github.com/QiYueYiya/OpenWrt-Actions/releases/download/RAX3000Me/RA
     <summary>国内网络下载命令</summary>
 
     ```shell
-    wget https://gh.ddlc.top/https://github.com/QiYueYiya/OpenWrt-Actions/releases/download/RAX3000Me/RAX3000M_XR30_cfg-telnet-20240117.conf
+    wget https://github.akams.cn/https://github.com/QiYueYiya/OpenWrt-Actions/releases/download/RAX3000Me/RAX3000M_XR30_cfg-telnet-20240117.conf
     ```
     </details>
 
@@ -55,7 +55,7 @@ wget -P /tmp https://github.com/QiYueYiya/OpenWrt-Actions/releases/download/RAX3
     <summary>国内网络下载命令</summary>
 
     ```shell
-    wget -P /tmp https://gh.ddlc.top/https://github.com/QiYueYiya/OpenWrt-Actions/releases/download/RAX3000Me/mt7981_cmcc_rax3000m-fip-fixed-parts.bin
+    wget -P /tmp https://github.akams.cn/https://github.com/QiYueYiya/OpenWrt-Actions/releases/download/RAX3000Me/mt7981_cmcc_rax3000m-fip-fixed-parts.bin
     ```
     </details>
 - <details>
