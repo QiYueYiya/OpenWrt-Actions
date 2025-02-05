@@ -5,7 +5,7 @@ config global
 	option mode 'normal'
 	option bing_background '0'
 	option transparency_dark '0.2'
-	option blur_dark '2 '
+	option blur_dark '2'
 	option transparency '0.2'
 	option blur '2'
 	option save '保存更改'
