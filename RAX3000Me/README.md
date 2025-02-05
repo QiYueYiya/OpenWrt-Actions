@@ -18,13 +18,13 @@ echo $mypassword
 ```
 #### 3. 下载开启```Telnet```配置文件
 ```shell
-wget https://github.com/QiYueYiya/OpenWrt-Actions/releases/download/RAX3000Me/RAX3000M_XR30_cfg-telnet-20240117.conf
+wget https://github.com/QiYueYiya/OpenWrt-Actions/releases/download/RAX3000Me_Files/RAX3000M_XR30_cfg-telnet-20240117.conf
 ```
 - <details>
     <summary>国内网络下载命令</summary>
 
     ```shell
-    wget https://github.akams.cn/https://github.com/QiYueYiya/OpenWrt-Actions/releases/download/RAX3000Me/RAX3000M_XR30_cfg-telnet-20240117.conf
+    wget https://github.akams.cn/https://github.com/QiYueYiya/OpenWrt-Actions/releases/download/RAX3000Me_Files/RAX3000M_XR30_cfg-telnet-20240117.conf
     ```
     </details>
 
@@ -49,13 +49,13 @@ openssl aes-256-cbc -pbkdf2 -k "$mypassword" -in RAX3000M_XR30_cfg-telnet-202401
 使用任意```Telnet工具```登录到路由器，默认无密码
 #### 1. 下载```Uboot```到路由器```/tmp```目录下
 ```shell
-wget -P /tmp https://github.com/QiYueYiya/OpenWrt-Actions/releases/download/RAX3000Me/mt7981_cmcc_rax3000m-fip-fixed-parts.bin
+wget -P /tmp https://github.com/QiYueYiya/OpenWrt-Actions/releases/download/RAX3000Me_Files/mt7981_cmcc_rax3000m-fip-fixed-parts.bin
 ```
 - <details>
     <summary>国内网络下载命令</summary>
 
     ```shell
-    wget -P /tmp https://github.akams.cn/https://github.com/QiYueYiya/OpenWrt-Actions/releases/download/RAX3000Me/mt7981_cmcc_rax3000m-fip-fixed-parts.bin
+    wget -P /tmp https://github.akams.cn/https://github.com/QiYueYiya/OpenWrt-Actions/releases/download/RAX3000Me_Files/mt7981_cmcc_rax3000m-fip-fixed-parts.bin
     ```
     </details>
 - <details>
