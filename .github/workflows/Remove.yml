@@ -3,7 +3,7 @@ name: Remove
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 0 1 * *'
+    - cron: '0 0 3 * *'
 
 jobs:
   Delete-Workflow:
@@ -15,12 +15,3 @@ jobs:
       with:
         retain_days: 2
         keep_minimum_runs: 1
-
-    - name: 删除旧的发行版
-      uses: dev-drprasad/delete-older-releases@master
-      continue-on-error: true
-      with:
-        keep_latest: 4
-        delete_tags: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
