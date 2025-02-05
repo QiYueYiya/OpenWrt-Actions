@@ -96,7 +96,7 @@ jobs:
         cd openwrt
         echo -e "$(nproc) thread compile"
         make -j$(nproc) || make -j1 || make -j1 V=s
-                echo "status=success" >> $GITHUB_OUTPUT
+        echo "status=success" >> $GITHUB_OUTPUT
 
     - name: 整理文件
       id: organize
@@ -137,7 +137,7 @@ jobs:
       run: |
         echo "编译时间：$(date -d "@${{ env.START_DATE }}" +"%Y年%m月%d日 %H点%M分")" >> release.txt
         echo "默认网关：192.168.3.1" >> release.txt
-        echo 包含插件：$(grep "CONFIG_PACKAGE_luci-app-\(.*\)=y" openwrt/.config | sed "s/CONFIG_PACKAGE_luci-app-\(.*\)=y/\1/g" | grep -v "_\|arpbind\|autoreboot\|firewall\|mtk\|opkg") >> release.txt
+        echo 包含插件：$(grep "CONFIG_PACKAGE_luci-app-\(.*\)=y" openwrt/.config | sed "s/CONFIG_PACKAGE_luci-app-\(.*\)=y/\1/g" | grep -v "_\|arpbind\|autoreboot\|firewall\|mtk\|opkg\|mtwifi\|ramfree") >> release.txt
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: 将固件上传到release
@@ -154,7 +154,6 @@ jobs:
 
     - name: Telegram 通知
       if: env.TELEGRAM_CHATID && env.TELEGRAM_BOT_TOKEN
-      continue-on-error: true
       run: |
         duration=$((($(date +%s)-${{ env.START_DATE }})/60)) && time=$((duration/60))小时$((duration%60))分钟
         if [ "${{ steps.compile.outputs.status }}" == 'success' ]; then

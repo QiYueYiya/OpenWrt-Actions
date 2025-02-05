@@ -137,7 +137,7 @@ jobs:
       run: |
         echo "编译时间：$(date -d "@${{ env.START_DATE }}" +"%Y年%m月%d日 %H点%M分")" >> release.txt
         echo "默认网关：192.168.5.1" >> release.txt
-        echo 包含插件：$(grep "CONFIG_PACKAGE_luci-app-\(.*\)=y" openwrt/.config | sed "s/CONFIG_PACKAGE_luci-app-\(.*\)=y/\1/g" | grep -v "_\|arpbind\|autoreboot\|firewall\|mtk\|opkg\mtwifi") >> release.txt
+        echo 包含插件：$(grep "CONFIG_PACKAGE_luci-app-\(.*\)=y" openwrt/.config | sed "s/CONFIG_PACKAGE_luci-app-\(.*\)=y/\1/g" | grep -v "_\|arpbind\|autoreboot\|firewall\|mtk\|opkg\|mtwifi\|ramfree") >> release.txt
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: 将固件上传到release
