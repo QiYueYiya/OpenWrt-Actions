@@ -16,9 +16,7 @@
 
 # AdGuardHome
 git clone --depth 1 -b luci-app-adguardhome https://github.com/QiYueYiya/OpenWrt-Actions package/luci-app-adguardhome
-# Mosdns
-rm -rf feeds/packages/lang/golang
-git clone https://github.com/sbwml/packages_lang_golang -b 23.x feeds/packages/lang/golang
-rm -rf feeds/packages/net/v2ray-geodata
-git clone https://github.com/sbwml/luci-app-mosdns -b v5 package/mosdns
-git clone https://github.com/sbwml/v2ray-geodata package/v2ray-geodata
+git clone --depth 1 -b main https://github.com/EasyTier/luci-app-easytier.git package/luci-app-easytier
+rm -rf package/luci-app-easytier/.github package/luci-app-easytier/README.md
+mv package/luci-app-easytier/easytier package/easytier
+mv package/luci-app-easytier/luci-app-easytier package/luci-app-easytier
