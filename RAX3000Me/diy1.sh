@@ -14,5 +14,10 @@
 #sed -i 's/^#\(.*helloworld\)/\1/' feeds.conf.default
 # sed -i '$a src-git small8 https://github.com/kenzok8/small-package' feeds.conf.default
 
-# 软件包
+# AdGuardHome
 git clone --depth 1 -b luci-app-adguardhome https://github.com/QiYueYiya/OpenWrt-Actions package/luci-app-adguardhome
+# Mosdns
+find ./ | grep Makefile | grep v2ray-geodata | xargs rm -f
+find ./ | grep Makefile | grep mosdns | xargs rm -f
+git clone https://github.com/sbwml/luci-app-mosdns -b v5 package/mosdns
+git clone https://github.com/sbwml/v2ray-geodata package/v2ray-geodata
