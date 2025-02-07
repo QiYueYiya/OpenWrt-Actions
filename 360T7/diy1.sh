@@ -14,4 +14,8 @@
 #sed -i 's/^#\(.*helloworld\)/\1/' feeds.conf.default
 git clone --depth 1 https://github.com/tty228/luci-app-wechatpush.git package/luci-app-wechatpush
 git clone --depth 1 https://github.com/kongfl888/luci-app-adguardhome package/luci-app-adguardhome
-# Add feed sources
+# Easytier
+git clone --depth 1 -b main https://github.com/EasyTier/luci-app-easytier.git luci-app-easytier
+mv luci-app-easytier/easytier package/easytier
+mv luci-app-easytier/luci-app-easytier package/luci-app-easytier
+rm -rf luci-app-easytier

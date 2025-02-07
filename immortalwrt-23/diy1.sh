@@ -14,4 +14,8 @@
 #sed -i 's/^#\(.*helloworld\)/\1/' feeds.conf.default
 # sed -i '$a src-git small8 https://github.com/kenzok8/small-package' feeds.conf.default
 
-# 软件包
+# Easytier
+git clone --depth 1 -b main https://github.com/EasyTier/luci-app-easytier.git luci-app-easytier
+mv luci-app-easytier/easytier package/easytier
+mv luci-app-easytier/luci-app-easytier package/luci-app-easytier
+rm -rf luci-app-easytier
