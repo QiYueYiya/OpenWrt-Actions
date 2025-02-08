@@ -21,7 +21,7 @@ on:
     - cron: '0 0 1 * *'
 
 env:
-  REPO_URL: https://github.com/hanwckf/immortalwrt-mt798x
+  REPO_URL: https://github.com/padavanonly/immortalwrt-mt798x.git
   REPO_BRANCH: openwrt-21.02
   FEEDS_CONF: 360T7/feeds.conf.default
   CONFIG_FILE: 360T7/.config
