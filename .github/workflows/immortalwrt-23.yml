@@ -29,8 +29,6 @@ env:
   DIY_P2_SH: immortalwrt-23/diy2.sh
   UPLOAD_FIRMWARE: false
   UPLOAD_RELEASE: true
-  TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-  TELEGRAM_CHATID: ${{ secrets.TELEGRAM_CHATID }}
   TZ: Asia/Shanghai
 
 jobs:
@@ -131,12 +129,28 @@ jobs:
         name: immortalwrt-23-${{ env.FIRMWARE_VERSION }}
         path: ${{ env.FIRMWARE }}
 
+    - name: 删除旧的Release
+      if: steps.organize.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true' && !cancelled()
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        TAG_NAME: immortalwrt-23
+      run: |
+        RELEASE_URL="https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG_NAME"
+        RELEASE_ID=$(curl -s -H "Authorization: token $GITHUB_TOKEN" $RELEASE_URL | jq -r '.id')
+        if [ "$RELEASE_ID" != "null" ]; then
+          echo "🗑️ 删除Release中: $RELEASE_ID..."
+          curl -X DELETE -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID"
+          echo "✅ Release删除成功!"
+        else
+          echo "⚠️ 未找到tag的Release: $TAG_NAME"
+        fi
+
     - name: 创建release标签
       id: tag
       if: steps.organize.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true' && !cancelled()
       run: |
         echo "编译时间：$(date -d "@${{ env.START_DATE }}" +"%Y年%m月%d日 %H点%M分")" >> release.txt
-         echo "默认网关：192.168.6.1" >> release.txt
+         echo "默认网关：192.168.3.1" >> release.txt
         echo 包含插件：$(grep "CONFIG_PACKAGE_luci-app-\(.*\)=y" openwrt/.config | sed "s/CONFIG_PACKAGE_luci-app-\(.*\)=y/\1/g" | grep -v "_\|arpbind\|autoreboot\|firewall\|opkg") >> release.txt
         echo "status=success" >> $GITHUB_OUTPUT
 
@@ -153,8 +167,10 @@ jobs:
         files: ${{ env.FIRMWARE }}/*
 
     - name: Telegram 通知
-      if: env.TELEGRAM_CHATID && env.TELEGRAM_BOT_TOKEN
-      continue-on-error: true
+      if: always()
+      env:
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        TELEGRAM_CHATID: ${{ secrets.TELEGRAM_CHATID }}
       run: |
         duration=$((($(date +%s)-${{ env.START_DATE }})/60)) && time=$((duration/60))小时$((duration%60))分钟
         if [ "${{ steps.compile.outputs.status }}" == 'success' ]; then
