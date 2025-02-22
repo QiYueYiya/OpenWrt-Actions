@@ -12,7 +12,8 @@
 
 # Uncomment a feed source
 #sed -i 's/^#\(.*helloworld\)/\1/' feeds.conf.default
-git clone --depth 1 -b luci-app-adguardhome https://github.com/QiYueYiya/OpenWrt-Actions package/luci-app-adguardhome
+# 自定义软件源
+git clone --depth 1 -b main https://github.com/QiYueYiya/openwrt-packages package/openwrt-packages
 # Easytier
 git clone --depth 1 -b main https://github.com/EasyTier/luci-app-easytier.git luci-app-easytier
 mv luci-app-easytier/easytier package/easytier

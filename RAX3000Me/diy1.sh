@@ -14,8 +14,8 @@
 #sed -i 's/^#\(.*helloworld\)/\1/' feeds.conf.default
 # sed -i '$a src-git small8 https://github.com/kenzok8/small-package' feeds.conf.default
 
-# AdGuardHome
-git clone --depth 1 -b luci-app-adguardhome https://github.com/QiYueYiya/OpenWrt-Actions package/luci-app-adguardhome
+# 自定义软件源
+git clone --depth 1 -b main https://github.com/QiYueYiya/openwrt-packages package/openwrt-packages
 # Mosdns
 #rm -rf feeds/packages/lang/golang
 #git clone https://github.com/sbwml/packages_lang_golang -b 23.x feeds/packages/lang/golang
