@@ -15,9 +15,9 @@
 # sed -i '$a src-git small8 https://github.com/kenzok8/small-package' feeds.conf.default
 
 # 自定义软件源
-git clone --depth 1 -b main https://github.com/QiYueYiya/openwrt-packages.git packages/openwrt-packages
+git clone --depth 1 -b main https://github.com/QiYueYiya/openwrt-packages.git package/openwrt-packages
 # Easytier
-git clone --depth 1 -b main https://github.com/EasyTier/luci-app-easytier.git packages/luci-app-easytier # 临时存放easytier
-mv packages/luci-app-easytier/easytier package/openwrt-packages/easytier # 移动easytier到openwrt-packages
-mv packages/luci-app-easytier/luci-app-easytier package/openwrt-packages/luci-app-easytier # 移动luci-app-easytier到openwrt-packages
-rm -rf packages/luci-app-easytier # 删除临时存放easytier
+git clone --depth 1 -b main https://github.com/EasyTier/luci-app-easytier.git package/luci-app-easytier # 临时存放easytier
+mv package/luci-app-easytier/easytier package/openwrt-packages/easytier # 移动easytier到openwrt-packages
+mv package/luci-app-easytier/luci-app-easytier package/openwrt-packages/luci-app-easytier # 移动luci-app-easytier到openwrt-packages
+rm -rf package/luci-app-easytier # 删除临时存放easytier
