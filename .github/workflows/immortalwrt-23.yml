@@ -167,7 +167,7 @@ jobs:
         files: ${{ env.FIRMWARE }}/*
 
     - name: Telegram 通知
-      if: always()
+      if: always() && !cancelled()
       env:
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         TELEGRAM_CHATID: ${{ secrets.TELEGRAM_CHATID }}
