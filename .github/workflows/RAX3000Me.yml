@@ -21,8 +21,8 @@ on:
     - cron: '0 0 1 * *'
 
 env:
-  REPO_URL: https://github.com/dailook/immortalwrt-mt798x-23.05.git
-  REPO_BRANCH: openwrt-23.05
+  REPO_URL: https://github.com/immortalwrt/immortalwrt.git
+  REPO_BRANCH: openwrt-24.10
   FEEDS_CONF: RAX3000Me/feeds.conf.default
   CONFIG_FILE: RAX3000Me/.config
   DIY_P1_SH: RAX3000Me/diy1.sh
@@ -116,8 +116,8 @@ jobs:
         rm -rf feeds.buildinfo
         rm -rf sha256sums
         rm -rf *toolchain*
-        mv *sysupgrade.bin RAX3000Me-${{ env.FIRMWARE_VERSION }}-sysupgrade.bin || echo 没有找到 *sysupgrade.bin 文件
-        mv *factory.bin RAX3000Me-${{ env.FIRMWARE_VERSION }}-factory.bin || echo 没有找到 *factory.bin 文件
+        rm -rf *bl2.bin
+        for f in immortalwrt-mediatek-filogic-cmcc_rax3000me*; do mv -- "$f" "RAX3000Me-${FIRMWARE_VERSION}-${f#immortalwrt-mediatek-filogic-cmcc_rax3000me-}"; done
         echo -e "$(sha256sum *)\n" > sha256sums
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
