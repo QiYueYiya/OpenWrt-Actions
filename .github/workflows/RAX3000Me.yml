@@ -108,16 +108,13 @@ jobs:
         mv $GITHUB_WORKSPACE/openwrt/bin/packages/*/* packages
         tar -czf packages.tar.gz packages
         rm -rf packages
+        mv *sysupgrade.itb RAX3000Me-250326-squashfs-sysupgrade.itb
         rm -rf version.buildinfo
         rm -rf profiles.json
-        rm -rf *rootfs*
-        rm -rf *kernel*
-        rm -rf *.manifest
         rm -rf feeds.buildinfo
         rm -rf sha256sums
-        rm -rf *toolchain*
         rm -rf *bl2.bin
-        for f in immortalwrt-mediatek-filogic-cmcc_rax3000me*; do mv -- "$f" "RAX3000Me-${FIRMWARE_VERSION}-${f#immortalwrt-mediatek-filogic-cmcc_rax3000me-}"; done
+        rm -rf immortalwrt*
         echo -e "$(sha256sum *)\n" > sha256sums
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
