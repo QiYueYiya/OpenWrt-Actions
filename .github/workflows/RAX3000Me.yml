@@ -1,39 +1,29 @@
-#
-# Copyright (c) 2019-2020 P3TERX <https://p3terx.com>
-#
-# This is free software, licensed under the MIT License.
-# See /LICENSE for more information.
-#
-# https://github.com/P3TERX/Actions-OpenWrt
-# Description: Build OpenWrt using GitHub Actions
-#
-
 name: RAX3000Me
-
 on:
   push:
     branches:
       - main
     paths:
-      - 'RAX3000Me/.config'
+      - 'RAX3000Me/packages.txt'
   workflow_dispatch:
   schedule:
     - cron: '0 0 1 * *'
 
 env:
-  REPO_URL: https://github.com/immortalwrt/immortalwrt.git
-  REPO_BRANCH: openwrt-24.10
-  FEEDS_CONF: RAX3000Me/feeds.conf.default
-  CONFIG_FILE: RAX3000Me/.config
-  DIY_P1_SH: RAX3000Me/diy1.sh
-  DIY_P2_SH: RAX3000Me/diy2.sh
+  SDK_URL: https://downloads.immortalwrt.org/releases/24.10-SNAPSHOT/targets/mediatek/filogic/immortalwrt-sdk-24.10-SNAPSHOT-mediatek-filogic_gcc-13.3.0_musl.Linux-x86_64.tar.zst
+  DOWNLOAD_URL: https://downloads.immortalwrt.org/releases/24.10-SNAPSHOT/targets/mediatek/filogic/immortalwrt-imagebuilder-24.10-SNAPSHOT-mediatek-filogic.Linux-x86_64.tar.zst
+  PROFILE: cmcc_rax3000me
+  FILES_FOLDER: RAX3000Me/files
+  UCI_CUSTOM_FILE: RAX3000Me/uci-custom
+  PACKAGES_LIST: RAX3000Me/packages.txt
+  DIY_SH: RAX3000Me/diy.sh
   UPLOAD_FIRMWARE: false
   UPLOAD_RELEASE: true
   TZ: Asia/Shanghai
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
 
     steps:
     - name: 检查项目分支
@@ -54,80 +44,90 @@ jobs:
         echo "FIRMWARE_VERSION=$(date +"%y%m%d")" >> $GITHUB_ENV
         echo "START_DATE=$(date +%s)" >> $GITHUB_ENV
 
-    - name: 下载源码
+    - name: 下载 OpenWrt SDK
       working-directory: /workdir
       run: |
         df -hT $PWD
-        git clone --single-branch -b $REPO_BRANCH $REPO_URL openwrt
-        ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
+        # 下载 openwrt_sdk
+        wget -O openwrt_sdk.tar.zst $SDK_URL
+        mkdir -p openwrt_sdk
+        tar -C openwrt_sdk -xvf openwrt_sdk.tar.zst --strip-components 1
+        ln -sf /workdir/openwrt_sdk $GITHUB_WORKSPACE/openwrt_sdk
 
-    - name: 加载软件源
+    - name: 加载 OpenWrt SDK 软件源
       run: |
-        [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
-        chmod +x $DIY_P1_SH
-        cd openwrt
-        $GITHUB_WORKSPACE/$DIY_P1_SH
+        chmod +x $DIY_SH
+        cd openwrt_sdk
+        $GITHUB_WORKSPACE/$DIY_SH
 
-    - name: 更新并安装软件源
-      run: cd openwrt && ./scripts/feeds update -a && ./scripts/feeds install -a
-
-    - name: 加载自定义配置
+    - name: 更新并下载 OpenWrt SDK 软件源
       run: |
-        [ -e RAX3000Me/files ] && mv RAX3000Me/files openwrt/files
-        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
-        chmod +x $DIY_P2_SH
-        cd openwrt
-        $GITHUB_WORKSPACE/$DIY_P2_SH
-
-    - name: 下载包
-      id: package
-      run: |
-        cd openwrt
+        cd openwrt_sdk
+        ./scripts/feeds update -a && ./scripts/feeds install -a
         make defconfig
-        make download -j8
-        find dl -size -1024c -exec ls -l {} \;
-        find dl -size -1024c -exec rm -f {} \;
+
+    - name: 开始编译 PACKAGE
+      id: compile_package
+      run: |
+        cd openwrt_sdk
+        # 编译软件
+        while IFS= read -r package; do
+            [[ -z "$package" ]] && continue
+            if [[ "$package" != "#"* ]]; then
+                echo "正在编译: $package"
+                make "package/$package/compile" -j$(nproc) || make "package/$package/compile" -j1 V=s
+            fi
+        done < "packages_compile"
+        mkdir -p packages
+        # 编译完成后，将编译好的软件包复制到 packages 文件夹
+        while read line; do
+          path=$(find bin/packages/*/base -type f -name "$line*")
+          echo $path
+          # cp $path packages
+          find ./bin/packages/*/base -type f -name "${line}*" -exec cp -t ./packages {} +
+        done < packages_list
+        
+    - name: 下载 Image Builder
+      working-directory: /workdir
+      run: |
+        df -hT $PWD
+        wget -O image_builder.tar.zst $DOWNLOAD_URL
+        mkdir -p image_builder
+        tar -C image_builder -xvf image_builder.tar.zst --strip-components 1
+        ln -sf /workdir/image_builder $GITHUB_WORKSPACE/image_builder
+
+    - name: 加载自定义配置以及三方软件包
+      run: |
+        [ -e $FILES_FOLDER ] && mv $FILES_FOLDER image_builder/files
+        [ -e $PACKAGES_LIST ] && mv $PACKAGES_LIST image_builder/packages.txt
+        # 新建文件夹
+        mkdir -p image_builder/packages
+        # 复制IPK包
+        cp openwrt_sdk/packages/*.ipk image_builder/packages
+        rm -rf openwrt_sdk/*
 
     - name: 编译固件
       id: compile
       run: |
-        cd openwrt
-        echo -e "$(nproc) thread compile"
-        make -j$(nproc) || make -j1 V=s
+        cd image_builder
+        PACKAGES=$(cat packages.txt | tr '\n' ' ')
+        make image PROFILE="$PROFILE" PACKAGES="$PACKAGES" FILES="files"
         echo "status=success" >> $GITHUB_OUTPUT
-
+    
     - name: 整理文件
       id: organize
       if: steps.compile.outputs.status == 'success' && !cancelled()
       run: |
         # 整理固件包时候,删除您不想要的固件或者文件,让它不需要上传到Actions空间
-        cd openwrt/bin/targets/*/*
-        mkdir -p package
-        mv packages package/core
-        mv package packages
-        mv $GITHUB_WORKSPACE/openwrt/bin/packages/*/* packages
-        tar -czf packages.tar.gz packages
-        rm -rf packages
-        rm -rf version.buildinfo
-        rm -rf profiles.json
-        rm -rf *rootfs*
-        rm -rf *kernel*
-        rm -rf *.manifest
-        rm -rf feeds.buildinfo
+        cd image_builder/bin/targets/*/*
         rm -rf sha256sums
-        rm -rf *toolchain*
-        rm -rf *bl2.bin
-        for f in immortalwrt-mediatek-filogic-cmcc_rax3000me*; do mv -- "$f" "RAX3000Me-${FIRMWARE_VERSION}-${f#immortalwrt-mediatek-filogic-cmcc_rax3000me-}"; done
+        rm -rf *.manifest
+        rm -rf *.json
+        mv *sysupgrade.itb RAX3000Me-${FIRMWARE_VERSION}-squashfs-sysupgrade.itb
+        for f in *cmcc_rax3000me*; do mv -- "$f" "cmcc_rax3000me-${f#*cmcc_rax3000me-}"; done
         echo -e "$(sha256sum *)\n" > sha256sums
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
-
-    - name: 上传固件到Github Actions空间
-      if: steps.organize.outputs.status == 'success' && env.UPLOAD_FIRMWARE == 'true' && !cancelled()
-      uses: actions/upload-artifact@main
-      with:
-        name: RAX3000Me-${{ env.FIRMWARE_VERSION }}
-        path: ${{ env.FIRMWARE }}
 
     - name: 删除旧的Release
       if: steps.organize.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true' && !cancelled()
@@ -151,9 +151,9 @@ jobs:
       run: |
         echo "编译时间：$(date -d "@${{ env.START_DATE }}" +"%Y年%m月%d日 %H点%M分")" >> release.txt
         echo "默认网关：192.168.5.1" >> release.txt
-        echo 包含插件：$(grep "CONFIG_PACKAGE_luci-app-\(.*\)=y" openwrt/.config | sed "s/CONFIG_PACKAGE_luci-app-\(.*\)=y/\1/g" | grep -v "_\|arpbind\|autoreboot\|firewall\|mtk\|opkg\|mtwifi\|ramfree") >> release.txt
+        echo 包含插件：$(grep "luci-app-\(.*\)" image_builder/packages.txt | sed "s/luci-app-\(.*\)/\1/g" | tr '\n' ' ') >> release.txt
         echo "status=success" >> $GITHUB_OUTPUT
-
+  
     - name: 将固件上传到release
       uses: softprops/action-gh-release@v1
       if: steps.tag.outputs.status == 'success' && !cancelled()
@@ -165,7 +165,7 @@ jobs:
         tag_name: RAX3000Me
         body_path: release.txt
         files: ${{ env.FIRMWARE }}/*
-
+  
     - name: Telegram 通知
       if: always() && !cancelled()
       env:
