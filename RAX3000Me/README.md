@@ -1,4 +1,5 @@
 # 准备事项
+目前Github Actions编译会失败，固件都是在本地上传的
 
 RAX3000Me带USB款，DDR3闪存，生产日期20241129
 
@@ -11,8 +12,6 @@ RAX3000Me带USB款，DDR3闪存，生产日期20241129
 - Preloader：RAX3000Me-nand-ddr3-preloader.bin
 - Uboot：RAX3000Me-nand-ddr3-bl31-uboot.fip
 - Sysupgrade：RAX3000Me-250325-squashfs-sysupgrade.itb
-
-固件使用的是imagebuilder编译，Packages源内不包含的插件使用OpenWrt SDK额外编译，如果要自行添加插件需要注意Packages源内是否包含，否则会编译失败
 
 感谢[tomatojack](https://www.right.com.cn/forum/space-uid-938072.html)、[lgs2007m](https://github.com/lgs2007m)、[immortalwrt](https://github.com/immortalwrt)等大佬
 
@@ -62,26 +61,26 @@ openssl aes-256-cbc -pbkdf2 -k "$mypassword" -in RAX3000M_XR30_cfg-telnet-202401
 使用任意```Telnet工具```登录到路由器，默认无密码
 ### 1. 下载```preloader```和```Uboot```到路由器```/tmp```目录下
 ```shell
-wget -P /tmp https://github.com/QiYueYiya/OpenWrt-Actions/releases/download/RAX3000Me/RAX3000Me-nand-ddr3-preloader.bin
+wget -P /tmp https://github.com/QiYueYiya/OpenWrt-Actions/releases/download/RAX3000Me_Files/RAX3000Me-nand-ddr3-preloader.bin
 ```
 ```shell
-wget -P /tmp https://github.com/QiYueYiya/OpenWrt-Actions/releases/download/RAX3000Me/RAX3000Me-nand-ddr3-bl31-uboot.fip
+wget -P /tmp https://github.com/QiYueYiya/OpenWrt-Actions/releases/download/RAX3000Me_Files/RAX3000Me-nand-ddr3-bl31-uboot.fip
 ```
 - <details>
     <summary>国内网络下载命令</summary>
 
     ```shell
-    wget -P /tmp https://github.akams.cn/https://github.com/QiYueYiya/OpenWrt-Actions/releases/download/RAX3000Me/RAX3000Me-nand-ddr3-preloader.bin
+    wget -P /tmp https://github.akams.cn/https://github.com/QiYueYiya/OpenWrt-Actions/releases/download/RAX3000Me_Files/RAX3000Me-nand-ddr3-preloader.bin
     ```
 
     ```shell
-    wget -P /tmp https://github.akams.cn/https://github.com/QiYueYiya/OpenWrt-Actions/releases/download/RAX3000Me/RAX3000Me-nand-ddr3-bl31-uboot.fip
+    wget -P /tmp https://github.akams.cn/https://github.com/QiYueYiya/OpenWrt-Actions/releases/download/RAX3000Me_Files/RAX3000Me-nand-ddr3-bl31-uboot.fip
     ```
     </details>
 - <details>
     <summary>路由器无网下载方法</summary>
     
-    #### 先在电脑上下载好[Uboot](https://github.com/QiYueYiya/OpenWrt-Actions/releases/download/RAX3000Me/RAX3000Me-nand-ddr3-preloader.bin)
+    #### 先在电脑上下载好[Uboot](https://github.com/QiYueYiya/OpenWrt-Actions/releases/download/RAX3000Me_Files/RAX3000Me-nand-ddr3-preloader.bin)
     #### 设置电脑网卡为固定IP ```192.168.10.2/24```（该IP需要和路由器在同一个网段，注意只使用一个网卡，无线也不要连接）
     #### 然后打开```HTTP File Server```软件，将对应```preloader```和```Uboot```文件拖拽到软件，然后使用下面对应的命令下载到```/tmp```目录：
     ```
@@ -109,7 +108,7 @@ mtd write /tmp/RAX3000Me-nand-ddr3-bl31-uboot.fip FIP
 ```
 mtd write /tmp/RAX3000Me-nand-ddr3-bl31-uboot.fip FIP
 ```
-### 6. 重启自动进入Uboot
+### 4. 重启进入Uboot
 ```
 reboot
 ```
