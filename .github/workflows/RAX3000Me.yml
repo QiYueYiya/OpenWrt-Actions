@@ -61,10 +61,6 @@ jobs:
         df -hT $PWD
         git clone --single-branch -b $REPO_BRANCH $REPO_URL openwrt
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
-        wget -O toolchain.tar.zst $TOOLCHAIN_URL
-        mkdir -p toolchain
-        tar -xvf toolchain.tar.zst -C toolchain --strip-components=1
-        ln -sf /workdir/toolchain $GITHUB_WORKSPACE/toolchain
 
     - name: 加载软件源
       run: |
@@ -89,7 +85,6 @@ jobs:
       run: |
         cd openwrt
         make defconfig
-        ./scripts/ext-toolchain.sh --toolchain $GITHUB_WORKSPACE/toolchain/toolchain-aarch64_cortex-a53_gcc-13.3.0_musl --overwrite-config --config mediatek/filogic
         make download -j8
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
