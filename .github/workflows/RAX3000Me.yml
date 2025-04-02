@@ -39,6 +39,9 @@ jobs:
     steps:
     - name: 检查项目分支
       uses: actions/checkout@main
+      with:
+        ref: main
+        fetch-depth: 0
 
     - name: 初始化编译环境
       env:
@@ -61,6 +64,20 @@ jobs:
         df -hT $PWD
         git clone --single-branch -b $REPO_BRANCH $REPO_URL openwrt
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
+
+    - name: cache
+      uses: klever1988/cachewrtbuild@main
+      with:
+        #是否一并缓存.ccache目录，如果你启用了ccache。这是唯一的常用参数，其他三个用于除错，一般不需要调整
+        ccache: false
+        #是否缓存工具链目录
+        toolchain: true
+        #是否跳过工具链编译
+        skip: true
+        #清空缓存
+        clean: false
+        #声明openwrt源码路径
+        prefix: ${{ github.workspace }}/openwrt
 
     - name: 加载软件源
       run: |
