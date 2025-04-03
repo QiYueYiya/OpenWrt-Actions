@@ -22,7 +22,7 @@ on:
 
 env:
   REPO_URL: https://github.com/immortalwrt/immortalwrt.git
-  REPO_BRANCH: openwrt-23.05
+  REPO_BRANCH: openwrt-24.10
   FEEDS_CONF: immortalwrt-24/feeds.conf.default
   CONFIG_FILE: immortalwrt-24/.config
   DIY_P1_SH: immortalwrt-24/diy1.sh
