@@ -57,7 +57,7 @@ jobs:
           echo "CACHE_HASH is $CACHE_HASH"
           # 判断条件：如果缓存哈希为空 或 当前哈希与缓存哈希不一致
           if [ -z "$CACHE_HASH" ] || [ "$CURRENT_HASH" != "$CACHE_HASH" ]; then
-            echo "::set-output name=NEED_CACHE::true"
+            echo "NEED_CACHE=true" >> $GITHUB_OUTPUT
           fi
 
       - name: 更新并安装软件源
