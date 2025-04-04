@@ -18,7 +18,7 @@ on:
       - '360T7/.config'
   workflow_dispatch:
   schedule:
-    - cron: '0 0 1 * *'
+    - cron: '0 4 1 * *'
 
 env:
   REPO_URL: https://github.com/padavanonly/immortalwrt-mt798x.git
