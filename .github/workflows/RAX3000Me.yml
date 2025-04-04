@@ -24,6 +24,7 @@ env:
   REPO_URL: https://github.com/immortalwrt/immortalwrt.git
   REPO_BRANCH: openwrt-24.10
   TOOLCHAIN_TAG: immortalwrt-toolchain
+  TOOLCHAIN_CACHE: false
   UPLOAD_FIRMWARE: false
   UPLOAD_RELEASE: true
   TZ: Asia/Shanghai
@@ -99,6 +100,7 @@ jobs:
     - name: 准备缓存的 Toolchain
       id: toolchain
       continue-on-error: true
+      if: env.TOOLCHAIN_CACHE == 'true'
       run: |
         cd $openwrt_root
         export CURRENT_HASH=$(git log --pretty=tformat:"%h" -n1 tools toolchain)
