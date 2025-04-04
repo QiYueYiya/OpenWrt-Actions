@@ -1,0 +1,141 @@
+name: immortalwrt Toolchain Cache
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 1 * *'
+env:
+  REPO_URL: https://github.com/immortalwrt/immortalwrt.git
+  REPO_BRANCH: openwrt-24.10
+  RELEASE_BRANCH: main
+  RELEASE_TAG: toolchain
+  TZ: Asia/Shanghai
+
+jobs:
+  Build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        PLATFORM: [RAX3000Me,immortalwrt-24]
+
+    steps:
+      - name: 检查项目分支
+        uses: actions/checkout@main
+
+      - name: 初始化编译环境
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          sudo apt update
+          sudo bash -c 'bash <(curl -s https://build-scripts.immortalwrt.org/init_build_environment.sh)'
+          sudo apt autoremove --purge
+          sudo apt clean
+          sudo timedatectl set-timezone "$TZ"
+          sudo chown $USER:$GROUPS /mnt
+
+      - name: 下载源码
+        working-directory: /mnt
+        id: clone
+        run: |
+          df -hT $PWD
+          git clone $REPO_URL -b $REPO_BRANCH openwrt
+          # 设置仓库名变量
+          export REPO_NAME="$(echo $REPO_URL | awk -F '/' '{print $(NF)}')"
+          echo "REPO_NAME=$REPO_NAME" >> $GITHUB_ENV
+          cd openwrt
+          echo "openwrt_root=$PWD" >> $GITHUB_ENV
+
+      - name: 比较哈希值
+        id: compare
+        run: |
+          cd $openwrt_root
+          export CURRENT_HASH=$(git log --pretty=tformat:"%h" -n1 tools toolchain)
+          echo "CURRENT_HASH=$CURRENT_HASH" >> $GITHUB_ENV
+          echo "CURRENT_HASH is $CURRENT_HASH"
+          export CACHE_HASH=$(curl -fSsL https://github.com/$GITHUB_REPOSITORY/releases/download/$RELEASE_TAG/cache-hash.txt)
+          echo "CACHE_HASH is $CACHE_HASH"
+          # 判断条件：如果缓存哈希为空 或 当前哈希与缓存哈希不一致
+          if [ -z "$CACHE_HASH" ] || [ "$CURRENT_HASH" != "$CACHE_HASH" ]; then
+            echo "::set-output name=NEED_CACHE::true"
+          fi
+
+      - name: 更新并安装软件源
+        id: feeds
+        if: steps.compare.outputs.NEED_CACHE == 'true'
+        run: |
+          cd $openwrt_root
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: 加载自定义配置
+        env:
+          PLATFORM: ${{ matrix.PLATFORM }}
+        id: download
+        if: steps.compare.outputs.NEED_CACHE == 'true'
+        run: |
+          mv $PLATFORM/.config $openwrt_root/.config
+          cd $openwrt_root
+          TARGET=$(grep "CONFIG_TARGET_[^_]*_[^_]*=y" .config | sed "s/^CONFIG_TARGET_\([^_]*_[^_]*\)=y/\1/g")
+          echo "TARGET=$TARGET" >> $GITHUB_ENV
+          TARGET_PATH=$(echo $TARGET | sed 's/_/\//g')
+          wget -O llvm-bpf.tar.zst https://downloads.immortalwrt.org/releases/24.10-SNAPSHOT/targets/$TARGET_PATH/llvm-bpf-18.1.7.Linux-x86_64.tar.zst
+          tar -xaf llvm-bpf.tar.zst
+
+      - name: 下载包
+        id: package
+        if: steps.compare.outputs.NEED_CACHE == 'true'
+        run: |
+          cd $openwrt_root
+          make defconfig
+          make download -j8
+          find dl -size -1024c -exec ls -l {} \;
+          find dl -size -1024c -exec rm -f {} \;
+
+      - name: 编译 Tools
+        id: tools
+        if: steps.compare.outputs.NEED_CACHE == 'true'
+        run: |
+          cd $openwrt_root
+          echo -e "$(nproc) thread compile"
+          make tools/compile -j$(nproc) || make tools/compile -j1 V=s
+          echo "status=success" >> $GITHUB_OUTPUT
+
+      - name: 编译 Toolchain
+        id: toolchain
+        if: steps.compare.outputs.NEED_CACHE == 'true' && steps.tools.outputs.status == 'success'
+        run: |
+          cd $openwrt_root
+          echo -e "$(nproc) thread compile"
+          make toolchain/compile -j$(nproc) || make toolchain/compile -j1 V=s
+          make diffconfig
+          echo "status=success" >> $GITHUB_OUTPUT
+
+      - name: 整理文件
+        id: organize
+        if: steps.compare.outputs.NEED_CACHE == 'true' && steps.toolchain.outputs.status == 'success' && !cancelled()
+        run: |
+          cd $openwrt_root
+          echo 清理 OpenWrt 编译环境：保留核心目录（staging_dir、build_dir）
+          find -maxdepth 1 -not -name staging_dir -not -name build_dir -not -name llvm-bpf.tar.zst -not -name . | xargs rm -rf {}
+          rm -rf build_dir/target*
+          rm -rf staging_dir/target*
+          cd ..
+          mkdir -p output
+          tar -Jcf output/$REPO_NAME-$REPO_BRANCH-$TARGET.tar.xz -C openwrt .
+          echo $CURRENT_HASH >> output/cache-hash.txt
+          df -hT $PWD
+          cd output
+          echo "OUTPUTROOT=$PWD" >> $GITHUB_ENV
+
+      - name: 将固件上传到release
+        uses: softprops/action-gh-release@v2
+        if: steps.compare.outputs.NEED_CACHE == 'true' && steps.organize.outputs.status == 'success' && !cancelled()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        id: upload-release
+        with:
+          name: ${{ env.SOURCE_USER }}-${{ env.REPO_BRANCH }}-toolchain-cache
+          tag_name: ${{ env.RELEASE_TAG }}
+          body: ${{ env.RELEASE_BRANCH }}
+          files: ${{ env.OUTPUTROOT }}/*
