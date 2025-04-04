@@ -127,6 +127,7 @@ jobs:
           df -hT $PWD
           cd output
           echo "OUTPUTROOT=$PWD" >> $GITHUB_ENV
+          echo "status=success" >> $GITHUB_OUTPUT
 
       - name: 将固件上传到release
         uses: softprops/action-gh-release@v2
