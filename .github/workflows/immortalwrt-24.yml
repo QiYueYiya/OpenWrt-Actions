@@ -98,6 +98,7 @@ jobs:
 
     - name: 准备缓存的 Toolchain
       id: toolchain
+      continue-on-error: true
       run: |
         cd $openwrt_root
         export CURRENT_HASH=$(git log --pretty=tformat:"%h" -n1 tools toolchain)
