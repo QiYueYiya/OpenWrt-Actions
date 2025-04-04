@@ -7,7 +7,7 @@ env:
   REPO_URL: https://github.com/immortalwrt/immortalwrt.git
   REPO_BRANCH: openwrt-24.10
   RELEASE_BRANCH: main
-  RELEASE_TAG: toolchain
+  RELEASE_TAG: immortalwrt-toolchain
   TZ: Asia/Shanghai
 
 jobs:
