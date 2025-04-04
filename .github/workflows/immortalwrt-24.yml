@@ -87,6 +87,11 @@ jobs:
         $GITHUB_WORKSPACE/$DIY_P2_SH
         TARGET=$(grep "CONFIG_TARGET_[^_]*_[^_]*=y" .config | sed "s/^CONFIG_TARGET_\([^_]*_[^_]*\)=y/\1/g")
         echo "TARGET=$TARGET" >> $GITHUB_ENV
+        TARGET_PATH=$(echo $TARGET | sed 's/_/\//g')
+        if [ $TOOLCHAIN_CACHE == 'false' ]; then
+          wget -O llvm-bpf.tar.zst https://downloads.immortalwrt.org/releases/24.10-SNAPSHOT/targets/$TARGET_PATH/llvm-bpf-18.1.7.Linux-x86_64.tar.zst
+          tar -xaf llvm-bpf.tar.zst
+        fi
 
     - name: 下载包
       id: package
