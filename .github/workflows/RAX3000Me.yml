@@ -23,13 +23,15 @@ on:
 env:
   REPO_URL: https://github.com/immortalwrt/immortalwrt.git
   REPO_BRANCH: openwrt-24.10
-  TOOLCHAIN_URL: https://downloads.immortalwrt.org/releases/24.10-SNAPSHOT/targets/mediatek/filogic/immortalwrt-toolchain-24.10-SNAPSHOT-mediatek-filogic_gcc-13.3.0_musl.Linux-x86_64.tar.zst
   FEEDS_CONF: RAX3000Me/feeds.conf.default
   CONFIG_FILE: RAX3000Me/.config
   DIY_P1_SH: RAX3000Me/diy1.sh
   DIY_P2_SH: RAX3000Me/diy2.sh
   UPLOAD_FIRMWARE: false
   UPLOAD_RELEASE: true
+  TOOLCHAIN_REPO: QiYueYiya/OpenWrt-Actions
+  TOOLCHAIN_NAME: immortalwrt-openwrt-24.10-mediatek-filogic.tar.xz
+  TOOLCHAIN_TAG: toolchain
   TZ: Asia/Shanghai
 
 jobs:
@@ -39,9 +41,6 @@ jobs:
     steps:
     - name: 检查项目分支
       uses: actions/checkout@main
-      with:
-        ref: main
-        fetch-depth: 0
 
     - name: 初始化编译环境
       env:
@@ -53,63 +52,62 @@ jobs:
         sudo apt autoremove --purge
         sudo apt clean
         sudo timedatectl set-timezone "$TZ"
-        sudo mkdir -p /workdir
-        sudo chown $USER:$GROUPS /workdir
+        sudo chown $USER:$GROUPS /mnt
         echo "FIRMWARE_VERSION=$(date +"%y%m%d")" >> $GITHUB_ENV
         echo "START_DATE=$(date +%s)" >> $GITHUB_ENV
 
     - name: 下载源码
-      working-directory: /workdir
+      working-directory: /mnt
       run: |
         df -hT $PWD
-        git clone --single-branch -b $REPO_BRANCH $REPO_URL openwrt
-        ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
-
-    - name: cache
-      uses: klever1988/cachewrtbuild@main
-      with:
-        #是否一并缓存.ccache目录，如果你启用了ccache。这是唯一的常用参数，其他三个用于除错，一般不需要调整
-        ccache: false
-        #是否缓存工具链目录
-        toolchain: true
-        #是否跳过工具链编译
-        skip: true
-        #清空缓存
-        clean: false
-        #声明openwrt源码路径
-        prefix: ${{ github.workspace }}/openwrt
+        git clone --single-branch --depth 1 -b $REPO_BRANCH $REPO_URL openwrt
+        cd openwrt
+        echo "openwrt_root=$PWD" >> $GITHUB_ENV
 
     - name: 加载软件源
       run: |
-        [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
+        [ -e $FEEDS_CONF ] && mv $FEEDS_CONF $openwrt_root/feeds.conf.default
         chmod +x $DIY_P1_SH
-        cd openwrt
+        cd $openwrt_root
         $GITHUB_WORKSPACE/$DIY_P1_SH
 
     - name: 更新并安装软件源
-      run: cd openwrt && ./scripts/feeds update -a && ./scripts/feeds install -a
+      run: cd $openwrt_root && ./scripts/feeds update -a && ./scripts/feeds install -a
 
     - name: 加载自定义配置
       run: |
-        [ -e RAX3000Me/files ] && mv RAX3000Me/files openwrt/files
-        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
+        [ -e RAX3000Me/files ] && mv RAX3000Me/files $openwrt_root/files
+        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE $openwrt_root/.config
         chmod +x $DIY_P2_SH
-        cd openwrt
+        cd $openwrt_root
         $GITHUB_WORKSPACE/$DIY_P2_SH
 
     - name: 下载包
       id: package
       run: |
-        cd openwrt
+        cd $openwrt_root
         make defconfig
         make download -j8
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
 
+    - name: 准备缓存的 Toolchain
+      id: toolchain
+      run: |
+        cd $openwrt_root
+        export CURRENT_HASH=$(git log --pretty=tformat:"%h" -n1 tools toolchain)
+        echo "CURRENT_HASH is $CURRENT_HASH"
+        export CACHE_HASH=$(curl -fSsL https://github.com/$GITHUB_REPOSITORY/releases/download/$TOOLCHAIN_TAG/cache-hash.txt)
+        echo "CACHE_HASH is $CACHE_HASH"
+        if [ "$CURRENT_HASH" == "$CACHE_HASH" ]; then
+          wget -qc https://github.com/$GITHUB_REPOSITORY/releases/download/$TOOLCHAIN_TAG/$TOOLCHAIN_NAME -O - | tar -xJ
+          sed -i 's/ $(tool.*\/stamp-compile)//;' Makefile
+        fi
+
     - name: 编译固件
       id: compile
       run: |
-        cd openwrt
+        cd $openwrt_root
         echo -e "$(nproc) thread compile"
         make -j$(nproc) || make -j1 V=s
         echo "status=success" >> $GITHUB_OUTPUT
@@ -119,11 +117,11 @@ jobs:
       if: steps.compile.outputs.status == 'success' && !cancelled()
       run: |
         # 整理固件包时候,删除您不想要的固件或者文件,让它不需要上传到Actions空间
-        cd openwrt/bin/targets/*/*
+        cd $openwrt_root/bin/targets/*/*
         mkdir -p package
         mv packages package/core
         mv package packages
-        mv $GITHUB_WORKSPACE/openwrt/bin/packages/*/* packages
+        mv $openwrt_root/bin/packages/*/* packages
         tar -czf packages.tar.gz packages
         rm -rf packages
         mv *sysupgrade.itb RAX3000Me-250326-squashfs-sysupgrade.itb
@@ -166,7 +164,7 @@ jobs:
       run: |
         echo "编译时间：$(date -d "@${{ env.START_DATE }}" +"%Y年%m月%d日 %H点%M分")" >> release.txt
         echo "默认网关：192.168.5.1" >> release.txt
-        echo 包含插件：$(grep "CONFIG_PACKAGE_luci-app-\(.*\)=y" openwrt/.config | sed "s/CONFIG_PACKAGE_luci-app-\(.*\)=y/\1/g" | grep -v "_\|arpbind\|autoreboot\|firewall\|mtk\|opkg\|mtwifi\|ramfree") >> release.txt
+        echo 包含插件：$(grep "CONFIG_PACKAGE_luci-app-\(.*\)=y" $openwrt_root/.config | sed "s/CONFIG_PACKAGE_luci-app-\(.*\)=y/\1/g" | grep -v "_\|arpbind\|autoreboot\|firewall\|mtk\|opkg\|mtwifi\|ramfree\|package-manager") >> release.txt
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: 将固件上传到release
