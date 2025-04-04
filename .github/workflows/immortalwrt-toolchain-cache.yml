@@ -136,7 +136,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         id: upload-release
         with:
-          name: ${{ env.SOURCE_USER }}-${{ env.REPO_BRANCH }}-toolchain-cache
+          name: $REPO_NAME-${{ env.REPO_BRANCH }}-toolchain
           tag_name: ${{ env.RELEASE_TAG }}
           body: ${{ env.RELEASE_BRANCH }}
-          files: ${{ env.OUTPUTROOT }}/*
+          files: $OUTPUTROOT/*
