@@ -23,13 +23,9 @@ on:
 env:
   REPO_URL: https://github.com/immortalwrt/immortalwrt.git
   REPO_BRANCH: openwrt-24.10
-  FEEDS_CONF: RAX3000Me/feeds.conf.default
-  CONFIG_FILE: RAX3000Me/.config
-  DIY_P1_SH: RAX3000Me/diy1.sh
-  DIY_P2_SH: RAX3000Me/diy2.sh
+  TOOLCHAIN_TAG: immortalwrt-toolchain
   UPLOAD_FIRMWARE: false
   UPLOAD_RELEASE: true
-  TOOLCHAIN_TAG: immortalwrt-toolchain
   TZ: Asia/Shanghai
 
 jobs:
@@ -65,6 +61,9 @@ jobs:
         echo "openwrt_root=$PWD" >> $GITHUB_ENV
 
     - name: 加载软件源
+      env:
+        FEEDS_CONF: ${{ github.workflow }}/feeds.conf.default
+        DIY_P1_SH: ${{ github.workflow }}/diy1.sh
       run: |
         [ -e $FEEDS_CONF ] && mv $FEEDS_CONF $openwrt_root/feeds.conf.default
         chmod +x $DIY_P1_SH
@@ -75,8 +74,12 @@ jobs:
       run: cd $openwrt_root && ./scripts/feeds update -a && ./scripts/feeds install -a
 
     - name: 加载自定义配置
+      env:
+        CONFIG_FILES: ${{ github.workflow }}/files
+        CONFIG_FILE: ${{ github.workflow }}/.config
+        DIY_P2_SH: ${{ github.workflow }}/diy2.sh
       run: |
-        [ -e ${{ github.workflow }}/files ] && mv ${{ github.workflow }}/files $openwrt_root/files
+        [ -e $CONFIG_FILES ] && mv $CONFIG_FILES $openwrt_root/files
         [ -e $CONFIG_FILE ] && mv $CONFIG_FILE $openwrt_root/.config
         chmod +x $DIY_P2_SH
         cd $openwrt_root
@@ -140,8 +143,8 @@ jobs:
       if: steps.organize.outputs.status == 'success' && env.UPLOAD_FIRMWARE == 'true' && !cancelled()
       uses: actions/upload-artifact@main
       with:
-        name: ${{ github.workflow }}-${{ env.FIRMWARE_VERSION }}
-        path: ${{ env.FIRMWARE }}
+        name: ${{ github.workflow }}-$FIRMWARE_VERSION
+        path: $FIRMWARE
 
     - name: 删除旧的Release
       if: steps.organize.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true' && !cancelled()
@@ -149,6 +152,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         TAG_NAME: ${{ github.workflow }}
       run: |
+        git push origin --delete ${{env.TAG_NAME}} || echo "远程标签不存在"
         RELEASE_URL="https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG_NAME"
         RELEASE_ID=$(curl -s -H "Authorization: token $GITHUB_TOKEN" $RELEASE_URL | jq -r '.id')
         if [ "$RELEASE_ID" != "null" ]; then
@@ -163,7 +167,7 @@ jobs:
       id: tag
       if: steps.organize.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true' && !cancelled()
       run: |
-        echo "编译时间：$(date -d "@${{ env.START_DATE }}" +"%Y年%m月%d日 %H点%M分")" >> release.txt
+        echo "编译时间：$(date -d "@$START_DATE" +"%Y年%m月%d日 %H点%M分")" >> release.txt
         echo "默认网关：192.168.5.1" >> release.txt
         echo 包含插件：$(grep "CONFIG_PACKAGE_luci-app-\(.*\)=y" $openwrt_root/.config | sed "s/CONFIG_PACKAGE_luci-app-\(.*\)=y/\1/g" | grep -v "_\|arpbind\|autoreboot\|firewall\|mtk\|opkg\|mtwifi\|ramfree\|package-manager") >> release.txt
         echo "status=success" >> $GITHUB_OUTPUT
@@ -175,10 +179,10 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       id: upload-release
       with:
-        name: ${{ github.workflow }}-${{ env.FIRMWARE_VERSION }}
+        name: ${{ github.workflow }}-$FIRMWARE_VERSION
         tag_name: ${{ github.workflow }}
         body_path: release.txt
-        files: ${{ env.FIRMWARE }}/*
+        files: $FIRMWARE/*
 
     - name: Telegram 通知
       if: always() && !cancelled()
@@ -186,10 +190,10 @@ jobs:
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         TELEGRAM_CHATID: ${{ secrets.TELEGRAM_CHATID }}
       run: |
-        duration=$((($(date +%s)-${{ env.START_DATE }})/60)) && time=$((duration/60))小时$((duration%60))分钟
+        duration=$((($(date +%s)-$START_DATE)/60)) && time=$((duration/60))小时$((duration%60))分钟
         if [ "${{ steps.compile.outputs.status }}" == 'success' ]; then
-          content="🎉${{ github.workflow }}固件编译成功🎉%0A固件版本：${{ env.FIRMWARE_VERSION }}%0A编译用时：${time}"
+          content="🎉${{ github.workflow }}固件编译成功🎉%0A固件版本：$FIRMWARE_VERSION%0A编译用时：${time}"
         else
-          content="❌${{ github.workflow }}固件编译失败❌%0A固件版本：${{ env.FIRMWARE_VERSION }}%0A编译用时：${time}"
+          content="❌${{ github.workflow }}固件编译失败❌%0A固件版本：$FIRMWARE_VERSION%0A编译用时：${time}"
         fi
         curl "https://api.telegram.org/bot${{ env.TELEGRAM_BOT_TOKEN }}/sendMessage?chat_id=${{ env.TELEGRAM_CHATID }}&text=${content}"
