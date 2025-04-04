@@ -41,7 +41,7 @@ jobs:
           df -hT $PWD
           git clone --single-branch --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
           # 设置仓库名变量
-          export REPO_NAME="$(echo $REPO_URL | awk -F '/' '{print $(NF)}')"
+          export REPO_NAME="$(echo $REPO_URL | awk -F '/' '{print $(NF-1)}')"
           echo "REPO_NAME=$REPO_NAME" >> $GITHUB_ENV
           cd openwrt
           echo "openwrt_root=$PWD" >> $GITHUB_ENV

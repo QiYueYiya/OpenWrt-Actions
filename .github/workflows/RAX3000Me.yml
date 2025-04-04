@@ -55,7 +55,7 @@ jobs:
       run: |
         df -hT $PWD
         git clone --single-branch --depth 1 -b $REPO_BRANCH $REPO_URL openwrt
-        REPO_NAME="$(echo $REPO_URL | awk -F '/' '{print $(NF)}')"
+        REPO_NAME="$(echo $REPO_URL | awk -F '/' '{print $(NF-1)}')"
         echo "REPO_NAME=$REPO_NAME" >> $GITHUB_ENV
         cd openwrt
         echo "openwrt_root=$PWD" >> $GITHUB_ENV
@@ -84,6 +84,8 @@ jobs:
         chmod +x $DIY_P2_SH
         cd $openwrt_root
         $GITHUB_WORKSPACE/$DIY_P2_SH
+        TARGET=$(grep "CONFIG_TARGET_[^_]*_[^_]*=y" .config | sed "s/^CONFIG_TARGET_\([^_]*_[^_]*\)=y/\1/g")
+        echo "TARGET=$TARGET" >> $GITHUB_ENV
 
     - name: 下载包
       id: package
@@ -103,7 +105,6 @@ jobs:
         export CACHE_HASH=$(curl -fSsL https://github.com/$GITHUB_REPOSITORY/releases/download/$TOOLCHAIN_TAG/cache-hash.txt)
         echo "CACHE_HASH is $CACHE_HASH"
         if [ "$CURRENT_HASH" == "$CACHE_HASH" ]; then
-          TARGET=$(grep "CONFIG_TARGET_[^_]*_[^_]*=y" .config | sed "s/^CONFIG_TARGET_\([^_]*_[^_]*\)=y/\1/g")
           wget -qc https://github.com/$GITHUB_REPOSITORY/releases/download/$TOOLCHAIN_TAG/$REPO_NAME-$REPO_BRANCH-$TARGET.tar.xz -O - | tar -xJ
           sed -i 's/ $(tool.*\/stamp-compile)//;' Makefile
         fi
