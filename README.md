@@ -6,6 +6,10 @@
 | immortalwrt-23 | [![](https://github.com/QiYueYiya/OpenWrt-Actions/actions/workflows/immortalwrt-23.yml/badge.svg)](https://github.com/QiYueYiya/OpenWrt-Actions/actions/workflows/immortalwrt-23.yml) | [下载链接](https://github.com/QiYueYiya/OpenWrt-Actions/releases/tag/immortalwrt-23) |
 | immortalwrt-24 | [![](https://github.com/QiYueYiya/OpenWrt-Actions/actions/workflows/immortalwrt-24.yml/badge.svg)](https://github.com/QiYueYiya/OpenWrt-Actions/actions/workflows/immortalwrt-24.yml) | [下载链接](https://github.com/QiYueYiya/OpenWrt-Actions/releases/tag/immortalwrt-24) |
 
+## 赞助
+
+![star](.github/files/star.png)
+
 ## 鸣谢
 - [P3TERX](https://github.com/P3TERX)
 - [hanwckf](https://github.com/hanwckf)
