@@ -25,7 +25,6 @@ env:
   REPO_BRANCH: openwrt-24.10
   LLVM_BPF: llvm-bpf-18.1.7.Linux-x86_64.tar.zst
   TOOLCHAIN_TAG: immortalwrt-toolchain
-  TOOLCHAIN_CACHE: true
   UPLOAD_FIRMWARE: false
   UPLOAD_RELEASE: true
   TZ: Asia/Shanghai
@@ -60,9 +59,21 @@ jobs:
         REPO_NAME="$(echo $REPO_URL | awk -F '/' '{print $(NF-1)}')"
         echo "REPO_NAME=$REPO_NAME" >> $GITHUB_ENV
         cd openwrt
-        CURRENT_HASH=$(git log --pretty=tformat:"%h" -n1 tools toolchain)
-        echo "CURRENT_HASH=$CURRENT_HASH" >> $GITHUB_ENV
         echo "openwrt_root=$PWD" >> $GITHUB_ENV
+
+    - name: 比较哈希值
+      id: compare
+      run: |
+        cd $openwrt_root
+        export CURRENT_HASH=$(git log --pretty=tformat:"%h" -n1 tools toolchain)
+        echo "CURRENT_HASH=$CURRENT_HASH" >> $GITHUB_ENV
+        echo "CURRENT_HASH is $CURRENT_HASH"
+        export CACHE_HASH=$(curl -fSsL https://github.com/$GITHUB_REPOSITORY/releases/download/$TOOLCHAIN_TAG/cache-hash.txt)
+        echo "CACHE_HASH is $CACHE_HASH"
+        # 判断条件：如果当前哈希与缓存哈希一致，则使用缓存编译
+        if [ "$CURRENT_HASH" == "$CACHE_HASH" ]; then
+          echo "USE_CACHE=true" >> $GITHUB_OUTPUT
+        fi
 
     - name: 加载软件源
       env:
@@ -107,15 +118,11 @@ jobs:
     - name: 准备缓存的 Toolchain
       id: toolchain
       continue-on-error: true
-      if: env.TOOLCHAIN_CACHE == 'true'
+      if: steps.compare.outputs.USE_CACHE == 'true'
       run: |
         cd $openwrt_root
-        export CACHE_HASH=$(curl -fSsL https://github.com/$GITHUB_REPOSITORY/releases/download/$TOOLCHAIN_TAG/cache-hash.txt)
-        echo "CACHE_HASH is $CACHE_HASH"
-        if [ "$CURRENT_HASH" == "$CACHE_HASH" ]; then
-          wget -qc https://github.com/$GITHUB_REPOSITORY/releases/download/$TOOLCHAIN_TAG/$REPO_NAME-$REPO_BRANCH-$TARGET.tar.xz -O - | tar -xJ
-          sed -i 's/ $(tool.*\/stamp-compile)//;' Makefile
-        fi
+        wget -qc https://github.com/$GITHUB_REPOSITORY/releases/download/$TOOLCHAIN_TAG/$REPO_NAME-$REPO_BRANCH-$TARGET.tar.xz -O - | tar -xJ
+        sed -i 's/ $(tool.*\/stamp-compile)//;' Makefile
 
     - name: 编译固件
       id: compile
