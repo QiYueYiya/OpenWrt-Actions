@@ -191,10 +191,10 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       id: upload-release
       with:
-        name: ${{ github.workflow }}-$FIRMWARE_VERSION
+        name: ${{ github.workflow }}-${{ env.FIRMWARE_VERSION }}
         tag_name: ${{ github.workflow }}
         body_path: release.txt
-        files: $FIRMWARE/*
+        files: ${{ env.FIRMWARE }}/*
 
     - name: Telegram 通知
       if: always() && !cancelled()

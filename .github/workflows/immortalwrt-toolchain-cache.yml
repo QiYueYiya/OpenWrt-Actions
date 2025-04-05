@@ -116,6 +116,7 @@ jobs:
         if: steps.compare.outputs.NEED_CACHE == 'true' && steps.toolchain.outputs.status == 'success' && !cancelled()
         run: |
           cd $openwrt_root
+          df -hT $PWD
           echo 清理 OpenWrt 编译环境：保留核心目录（staging_dir、build_dir）
           find -maxdepth 1 -not -name staging_dir -not -name build_dir -not -name . | xargs rm -rf {}
           rm -rf build_dir/target*
@@ -126,8 +127,8 @@ jobs:
           mkdir -p output
           tar -Jcf output/$REPO_NAME-$REPO_BRANCH-$TARGET.tar.xz -C openwrt .
           echo $CURRENT_HASH >> output/cache-hash.txt
-          df -hT $PWD
           cd output
+          ls
           echo "OUTPUTROOT=$PWD" >> $GITHUB_ENV
           echo "status=success" >> $GITHUB_OUTPUT
 
@@ -138,7 +139,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         id: upload-release
         with:
-          name: $REPO_NAME-${{ env.REPO_BRANCH }}-toolchain
+          name: ${{ env.REPO_NAME }}-${{ env.REPO_BRANCH }}-toolchain
           tag_name: ${{ env.RELEASE_TAG }}
           body_path: release.txt
-          files: $OUTPUTROOT/*
+          files: ${{ env.OUTPUTROOT }}/*
