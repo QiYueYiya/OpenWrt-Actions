@@ -23,6 +23,7 @@ on:
 env:
   REPO_URL: https://github.com/immortalwrt/immortalwrt.git
   REPO_BRANCH: openwrt-24.10
+  LLVM_BPF: llvm-bpf-18.1.7.Linux-x86_64.tar.zst
   TOOLCHAIN_TAG: immortalwrt-toolchain
   TOOLCHAIN_CACHE: false
   UPLOAD_FIRMWARE: false
@@ -88,10 +89,8 @@ jobs:
         TARGET=$(grep "CONFIG_TARGET_[^_]*_[^_]*=y" .config | sed "s/^CONFIG_TARGET_\([^_]*_[^_]*\)=y/\1/g")
         echo "TARGET=$TARGET" >> $GITHUB_ENV
         TARGET_PATH=$(echo $TARGET | sed 's/_/\//g')
-        if [ $TOOLCHAIN_CACHE == 'false' ]; then
-          wget -O llvm-bpf.tar.zst https://downloads.immortalwrt.org/releases/24.10-SNAPSHOT/targets/$TARGET_PATH/llvm-bpf-18.1.7.Linux-x86_64.tar.zst
-          tar -xaf llvm-bpf.tar.zst
-        fi
+        wget -O llvm-bpf.tar.zst https://downloads.immortalwrt.org/releases/24.10-SNAPSHOT/targets/$TARGET_PATH/${{ env.LLVM_BPF }}
+        tar -xaf llvm-bpf.tar.zst
 
     - name: 下载包
       id: package
