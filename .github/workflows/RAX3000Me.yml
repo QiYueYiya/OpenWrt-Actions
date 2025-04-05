@@ -25,7 +25,7 @@ env:
   REPO_BRANCH: openwrt-24.10
   LLVM_BPF: llvm-bpf-18.1.7.Linux-x86_64.tar.zst
   TOOLCHAIN_TAG: immortalwrt-toolchain
-  TOOLCHAIN_CACHE: false
+  TOOLCHAIN_CACHE: true
   UPLOAD_FIRMWARE: false
   UPLOAD_RELEASE: true
   TZ: Asia/Shanghai
