@@ -122,8 +122,6 @@ jobs:
           rm -rf build_dir/target*
           rm -rf staging_dir/target*
           cd ..
-          echo "Toolchain for [$REPO_NAME]($REPO_URL)" >> release.txt
-          echo "Hash: $CURRENT_HASH" >> release.txt
           mkdir -p output
           tar -Jcf output/$REPO_NAME-$REPO_BRANCH-$TARGET.tar.xz -C openwrt .
           echo $CURRENT_HASH >> output/cache-hash.txt
@@ -131,6 +129,13 @@ jobs:
           ls
           echo "OUTPUTROOT=$PWD" >> $GITHUB_ENV
           echo "status=success" >> $GITHUB_OUTPUT
+      
+      - name: 创建release标签
+        id: tag
+        if: steps.compare.outputs.NEED_CACHE == 'true' && steps.organize.outputs.status == 'success' && !cancelled()
+        run: |
+          echo "Toolchain for [$REPO_NAME]($REPO_URL)" >> release.txt
+          echo "Hash: $CURRENT_HASH" >> release.txt
 
       - name: 将固件上传到release
         uses: softprops/action-gh-release@v2
