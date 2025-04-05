@@ -117,7 +117,7 @@ jobs:
         run: |
           cd $openwrt_root
           echo 清理 OpenWrt 编译环境：保留核心目录（staging_dir、build_dir）
-          find -maxdepth 1 -not -name staging_dir -not -name build_dir -not -name llvm-bpf.tar.zst -not -name . | xargs rm -rf {}
+          find -maxdepth 1 -not -name staging_dir -not -name build_dir -not -name . | xargs rm -rf {}
           rm -rf build_dir/target*
           rm -rf staging_dir/target*
           cd ..
