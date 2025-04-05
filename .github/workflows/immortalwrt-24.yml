@@ -60,6 +60,8 @@ jobs:
         REPO_NAME="$(echo $REPO_URL | awk -F '/' '{print $(NF-1)}')"
         echo "REPO_NAME=$REPO_NAME" >> $GITHUB_ENV
         cd openwrt
+        CURRENT_HASH=$(git log --pretty=tformat:"%h" -n1 tools toolchain)
+        echo "CURRENT_HASH=$CURRENT_HASH" >> $GITHUB_ENV
         echo "openwrt_root=$PWD" >> $GITHUB_ENV
 
     - name: 加载软件源
@@ -108,8 +110,6 @@ jobs:
       if: env.TOOLCHAIN_CACHE == 'true'
       run: |
         cd $openwrt_root
-        export CURRENT_HASH=$(git log --pretty=tformat:"%h" -n1 tools toolchain)
-        echo "CURRENT_HASH is $CURRENT_HASH"
         export CACHE_HASH=$(curl -fSsL https://github.com/$GITHUB_REPOSITORY/releases/download/$TOOLCHAIN_TAG/cache-hash.txt)
         echo "CACHE_HASH is $CACHE_HASH"
         if [ "$CURRENT_HASH" == "$CACHE_HASH" ]; then
