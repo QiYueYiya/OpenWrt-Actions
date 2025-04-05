@@ -89,8 +89,9 @@ jobs:
         TARGET=$(grep "CONFIG_TARGET_[^_]*_[^_]*=y" .config | sed "s/^CONFIG_TARGET_\([^_]*_[^_]*\)=y/\1/g")
         echo "TARGET=$TARGET" >> $GITHUB_ENV
         TARGET_PATH=$(echo $TARGET | sed 's/_/\//g')
-        wget -O llvm-bpf.tar.zst https://downloads.immortalwrt.org/releases/24.10-SNAPSHOT/targets/$TARGET_PATH/llvm-bpf-18.1.7.Linux-x86_64.tar.zst
-        tar -xaf llvm-bpf.tar.zst
+        wget -O llvm-bpf.tar.zst https://downloads.immortalwrt.org/releases/24.10-SNAPSHOT/targets/$TARGET_PATH/${{ env.LLVM_BPF }} || echo "下载llvm-bpf失败"
+        tar -xaf llvm-bpf.tar.zst || echo "解压llvm-bpf失败"
+        rm -rf llvm-bpf.tar.zst
 
     - name: 下载包
       id: package
