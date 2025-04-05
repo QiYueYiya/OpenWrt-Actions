@@ -6,7 +6,7 @@ on:
 env:
   REPO_URL: https://github.com/immortalwrt/immortalwrt.git
   REPO_BRANCH: openwrt-24.10
-  RELEASE_BRANCH: main
+  LLVM_BPF: llvm-bpf-18.1.7.Linux-x86_64.tar.zst
   RELEASE_TAG: immortalwrt-toolchain
   TZ: Asia/Shanghai
 
@@ -121,6 +121,8 @@ jobs:
           rm -rf build_dir/target*
           rm -rf staging_dir/target*
           cd ..
+          echo "Toolchain for [$REPO_NAME]($REPO_URL)" >> release.txt
+          echo "Hash: $CURRENT_HASH" >> release.txt
           mkdir -p output
           tar -Jcf output/$REPO_NAME-$REPO_BRANCH-$TARGET.tar.xz -C openwrt .
           echo $CURRENT_HASH >> output/cache-hash.txt
@@ -138,5 +140,5 @@ jobs:
         with:
           name: $REPO_NAME-${{ env.REPO_BRANCH }}-toolchain
           tag_name: ${{ env.RELEASE_TAG }}
-          body: ${{ env.RELEASE_BRANCH }}
+          body_path: release.txt
           files: $OUTPUTROOT/*
