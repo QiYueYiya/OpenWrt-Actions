@@ -188,6 +188,18 @@ jobs:
         echo 包含插件：$(grep "CONFIG_PACKAGE_luci-app-\(.*\)=y" $openwrt_root/.config | sed "s/CONFIG_PACKAGE_luci-app-\(.*\)=y/\1/g" | grep -v "_\|arpbind\|autoreboot\|firewall\|mtk\|opkg\|mtwifi\|ramfree\|package-manager") >> release.txt
         echo "status=success" >> $GITHUB_OUTPUT
 
+    - name: 将固件上传到release历史
+      uses: softprops/action-gh-release@v1
+      if: steps.tag.outputs.status == 'success' && !cancelled()
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      id: upload-history
+      with:
+        name: ${{ github.workflow }}-${{ env.FIRMWARE_VERSION }}
+        tag_name: ${{ github.workflow }}-${{ env.FIRMWARE_VERSION }}
+        body_path: release.txt
+        files: ${{ env.FIRMWARE }}/*
+
     - name: 将固件上传到release
       uses: softprops/action-gh-release@v1
       if: steps.tag.outputs.status == 'success' && !cancelled()
