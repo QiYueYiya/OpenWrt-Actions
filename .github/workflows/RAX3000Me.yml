@@ -63,8 +63,12 @@ jobs:
 
     - name: 比较哈希值
       id: compare
+      env:
+        CONFIG_FILE: ${{ github.workflow }}/.config
       run: |
         cd $openwrt_root
+        TARGET=$(grep "CONFIG_TARGET_[^_|ROOTFS]*_[^_]*=y" $CONFIG_FILES | sed "s/^CONFIG_TARGET_\([^_]*_[^_]*\)=y/\1/g")
+        echo "TARGET=$TARGET" >> $GITHUB_ENV
         export CURRENT_HASH=$(git log --pretty=tformat:"%h" -n1 tools toolchain)
         echo "CURRENT_HASH=$CURRENT_HASH" >> $GITHUB_ENV
         echo "CURRENT_HASH is $CURRENT_HASH"
@@ -73,6 +77,11 @@ jobs:
         # 判断条件：如果当前哈希与缓存哈希一致，则使用缓存编译
         if [ "$CURRENT_HASH" == "$CACHE_HASH" ]; then
           echo "USE_CACHE=true" >> $GITHUB_OUTPUT
+        else
+          TARGET_PATH=$(echo $TARGET | sed 's/_/\//g')
+          wget -O llvm-bpf.tar.zst https://downloads.immortalwrt.org/releases/24.10-SNAPSHOT/targets/$TARGET_PATH/${{ env.LLVM_BPF }} || echo "下载llvm-bpf失败"
+          tar -xaf llvm-bpf.tar.zst || echo "解压llvm-bpf失败"
+          rm -rf llvm-bpf.tar.zst
         fi
 
     - name: 加载软件源
@@ -99,12 +108,6 @@ jobs:
         chmod +x $DIY_P2_SH
         cd $openwrt_root
         $GITHUB_WORKSPACE/$DIY_P2_SH
-        TARGET=$(grep "CONFIG_TARGET_[^_]*_[^_]*=y" .config | sed "s/^CONFIG_TARGET_\([^_]*_[^_]*\)=y/\1/g")
-        echo "TARGET=$TARGET" >> $GITHUB_ENV
-        TARGET_PATH=$(echo $TARGET | sed 's/_/\//g')
-        wget -O llvm-bpf.tar.zst https://downloads.immortalwrt.org/releases/24.10-SNAPSHOT/targets/$TARGET_PATH/${{ env.LLVM_BPF }} || echo "下载llvm-bpf失败"
-        tar -xaf llvm-bpf.tar.zst || echo "解压llvm-bpf失败"
-        rm -rf llvm-bpf.tar.zst
 
     - name: 下载包
       id: package
@@ -217,6 +220,7 @@ jobs:
       env:
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         TELEGRAM_CHATID: ${{ secrets.TELEGRAM_CHATID }}
+        CONFIG_FILE: ${{ github.workflow }}/.config
       run: |
         duration=$((($(date +%s)-$START_DATE)/60)) && time=$((duration/60))小时$((duration%60))分钟
         if [ "${{ steps.compile.outputs.status }}" == 'success' ]; then
@@ -225,3 +229,5 @@ jobs:
           content="❌${{ github.workflow }}固件编译失败❌%0A固件版本：$FIRMWARE_VERSION%0A编译用时：${time}"
         fi
         curl "https://api.telegram.org/bot${{ env.TELEGRAM_BOT_TOKEN }}/sendMessage?chat_id=${{ env.TELEGRAM_CHATID }}&text=${content}"
+        mv $CONFIG_FILE RAX3000Me-$FIRMWARE_VERSION.config || echo "配置文件不存在"
+        curl "https://api.telegram.org/bot${{ env.TELEGRAM_BOT_TOKEN }}/sendDocument?chat_id=${{ env.TELEGRAM_CHATID }}" -F document=@"RAX3000Me-$FIRMWARE_VERSION.config"
