@@ -119,7 +119,7 @@ jobs:
         mv $openwrt_root/bin/packages/*/* packages
         tar -czf packages.tar.gz packages
         rm -rf packages
-        mv *sysupgrade.itb ${{ github.workflow }}-250326-squashfs-sysupgrade.itb
+        mv *sysupgrade.itb ${{ github.workflow }}-$FIRMWARE_VERSION-squashfs-sysupgrade.itb
         rm -rf version.buildinfo
         rm -rf profiles.json
         rm -rf feeds.buildinfo
