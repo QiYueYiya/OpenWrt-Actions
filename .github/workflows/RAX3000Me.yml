@@ -192,7 +192,6 @@ jobs:
       env:
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         TELEGRAM_CHATID: ${{ secrets.TELEGRAM_CHATID }}
-        CONFIG_FILE: ${{ github.workflow }}/.config
       run: |
         duration=$((($(date +%s)-$START_DATE)/60)) && time=$((duration/60))小时$((duration%60))分钟
         if [ "${{ steps.compile.outputs.status }}" == 'success' ]; then

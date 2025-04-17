@@ -23,7 +23,6 @@ on:
 env:
   REPO_URL: https://github.com/immortalwrt/immortalwrt.git
   REPO_BRANCH: master
-  LLVM_BPF: llvm-bpf-18.1.7.Linux-x86_64.tar.zst
   TOOLCHAIN_TAG: immortalwrt-toolchain
   UPLOAD_FIRMWARE: false
   UPLOAD_RELEASE: true
@@ -31,7 +30,7 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
     - name: 检查项目分支
@@ -56,24 +55,8 @@ jobs:
       run: |
         df -hT $PWD
         git clone --single-branch -b $REPO_BRANCH $REPO_URL openwrt
-        REPO_NAME="$(echo $REPO_URL | awk -F '/' '{print $(NF-1)}')"
-        echo "REPO_NAME=$REPO_NAME" >> $GITHUB_ENV
         cd openwrt
         echo "openwrt_root=$PWD" >> $GITHUB_ENV
-
-    - name: 比较哈希值
-      id: compare
-      run: |
-        cd $openwrt_root
-        export CURRENT_HASH=$(git log --pretty=tformat:"%h" -n1 tools toolchain)
-        echo "CURRENT_HASH=$CURRENT_HASH" >> $GITHUB_ENV
-        echo "CURRENT_HASH is $CURRENT_HASH"
-        export CACHE_HASH=$(curl -fSsL https://github.com/$GITHUB_REPOSITORY/releases/download/$TOOLCHAIN_TAG/cache-hash.txt)
-        echo "CACHE_HASH is $CACHE_HASH"
-        # 判断条件：如果当前哈希与缓存哈希一致，则使用缓存编译
-        if [ "$CURRENT_HASH" == "$CACHE_HASH" ]; then
-          echo "USE_CACHE=true" >> $GITHUB_OUTPUT
-        fi
 
     - name: 加载软件源
       env:
@@ -99,12 +82,6 @@ jobs:
         chmod +x $DIY_P2_SH
         cd $openwrt_root
         $GITHUB_WORKSPACE/$DIY_P2_SH
-        TARGET=$(grep "CONFIG_TARGET_[^_]*_[^_]*=y" .config | sed "s/^CONFIG_TARGET_\([^_]*_[^_]*\)=y/\1/g")
-        echo "TARGET=$TARGET" >> $GITHUB_ENV
-        TARGET_PATH=$(echo $TARGET | sed 's/_/\//g')
-        wget -O llvm-bpf.tar.zst https://downloads.immortalwrt.org/releases/24.10-SNAPSHOT/targets/$TARGET_PATH/${{ env.LLVM_BPF }} || echo "下载llvm-bpf失败"
-        tar -xaf llvm-bpf.tar.zst || echo "解压llvm-bpf失败"
-        rm -rf llvm-bpf.tar.zst
 
     - name: 下载包
       id: package
@@ -114,15 +91,6 @@ jobs:
         make download -j8
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
-
-    - name: 准备缓存的 Toolchain
-      id: toolchain
-      continue-on-error: true
-      if: steps.compare.outputs.USE_CACHE == 'true'
-      run: |
-        cd $openwrt_root
-        wget -qc https://github.com/$GITHUB_REPOSITORY/releases/download/$TOOLCHAIN_TAG/$REPO_NAME-$REPO_BRANCH-$TARGET.tar.xz -O - | tar -xJ
-        sed -i 's/ $(tool.*\/stamp-compile)//;' Makefile
 
     - name: 编译固件
       id: compile
@@ -190,6 +158,18 @@ jobs:
         echo "默认网关：192.168.3.1" >> release.txt
         echo 包含插件：$(grep "CONFIG_PACKAGE_luci-app-\(.*\)=y" $openwrt_root/.config | sed "s/CONFIG_PACKAGE_luci-app-\(.*\)=y/\1/g" | grep -v "_\|arpbind\|autoreboot\|firewall\|mtk\|opkg\|mtwifi\|ramfree\|package-manager") >> release.txt
         echo "status=success" >> $GITHUB_OUTPUT
+
+    - name: 将固件上传到release历史
+      uses: softprops/action-gh-release@v1
+      if: steps.tag.outputs.status == 'success' && !cancelled()
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      id: upload-history
+      with:
+        name: ${{ github.workflow }}-${{ env.FIRMWARE_VERSION }}-history
+        tag_name: ${{ github.workflow }}-${{ env.FIRMWARE_VERSION }}
+        body_path: release.txt
+        files: ${{ env.FIRMWARE }}/*
 
     - name: 将固件上传到release
       uses: softprops/action-gh-release@v1
