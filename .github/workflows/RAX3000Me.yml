@@ -22,7 +22,7 @@ on:
 
 env:
   REPO_URL: https://github.com/immortalwrt/immortalwrt.git
-  REPO_BRANCH: master
+  REPO_BRANCH: openwrt-24.10
   TOOLCHAIN_TAG: immortalwrt-toolchain
   UPLOAD_FIRMWARE: false
   UPLOAD_RELEASE: true
