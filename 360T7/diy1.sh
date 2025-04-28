@@ -13,9 +13,7 @@
 # Uncomment a feed source
 #sed -i 's/^#\(.*helloworld\)/\1/' feeds.conf.default
 # 自定义软件源
-git clone --depth 1 -b main https://github.com/QiYueYiya/openwrt-packages package/openwrt-packages
+git clone --depth 1 -b main https://github.com/QiYueYiya/openwrt-packages.git package/openwrt-packages
 # Easytier
-git clone --depth 1 -b main https://github.com/EasyTier/luci-app-easytier.git luci-app-easytier
-mv luci-app-easytier/easytier package/easytier
-mv luci-app-easytier/luci-app-easytier package/luci-app-easytier
-rm -rf luci-app-easytier
+git clone --depth 1 -b main https://github.com/EasyTier/luci-app-easytier.git package/package-easytier
+

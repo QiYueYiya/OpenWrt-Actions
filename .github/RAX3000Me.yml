@@ -1,0 +1,222 @@
+#
+# Copyright (c) 2019-2020 P3TERX <https://p3terx.com>
+#
+# This is free software, licensed under the MIT License.
+# See /LICENSE for more information.
+#
+# https://github.com/P3TERX/Actions-OpenWrt
+# Description: Build OpenWrt using GitHub Actions
+#
+
+name: RAX3000Me
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'RAX3000Me/.config'
+  workflow_dispatch:
+    inputs:
+      REPO_BRANCH:
+        type: choice
+        description: 分支选择
+        options: 
+        - master
+        - openwrt-24.10
+        default: master
+      UPLOAD_RELEASE:
+        description: "发布Release版本"
+        required: true
+        type: boolean
+        default: true
+      UPLOAD_FIRMWARE:
+        description: "上传Actions空间"
+        required: true
+        type: boolean
+        default: false
+      UPLOAD_TOOLCHAIN:
+        description: "上传Toolchain缓存"
+        required: true
+        type: boolean
+        default: false
+  schedule:
+    - cron: '0 4 1 * *'
+
+env:
+  REPO_URL: https://github.com/immortalwrt/immortalwrt.git
+  TZ: Asia/Shanghai
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: 检查项目分支
+      uses: actions/checkout@main
+
+    - name: 初始化编译环境
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
+        sudo apt update
+        sudo bash -c 'bash <(curl -s https://build-scripts.immortalwrt.org/init_build_environment.sh)'
+        sudo apt autoremove --purge
+        sudo apt clean
+        sudo timedatectl set-timezone "$TZ"
+        sudo chown $USER:$GROUPS /mnt
+        echo "FIRMWARE_VERSION=$(date +"%y%m%d")" >> $GITHUB_ENV
+        echo "START_DATE=$(date +%s)" >> $GITHUB_ENV
+
+    - name: 下载源码
+      working-directory: /mnt
+      run: |
+        df -hT $PWD
+        git clone --single-branch -b ${{ inputs.REPO_BRANCH }} $REPO_URL openwrt
+        cd openwrt
+        echo "openwrt_root=$PWD" >> $GITHUB_ENV
+
+    - name: 加载软件源
+      env:
+        FEEDS_CONF: ${{ github.workflow }}/feeds.conf.default
+        DIY_P1_SH: ${{ github.workflow }}/diy1.sh
+      run: |
+        [ -e $FEEDS_CONF ] && mv $FEEDS_CONF $openwrt_root/feeds.conf.default
+        chmod +x $DIY_P1_SH
+        cd $openwrt_root
+        $GITHUB_WORKSPACE/$DIY_P1_SH
+
+    - name: 更新并安装软件源
+      run: cd $openwrt_root && ./scripts/feeds update -a && ./scripts/feeds install -a
+
+    - name: 加载自定义配置
+      env:
+        CONFIG_FILES: ${{ github.workflow }}/files
+        CONFIG_FILE: ${{ github.workflow }}/.config
+        DIY_P2_SH: ${{ github.workflow }}/diy2.sh
+      run: |
+        [ -e $CONFIG_FILES ] && mv $CONFIG_FILES $openwrt_root/files
+        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE $openwrt_root/.config
+        chmod +x $DIY_P2_SH
+        cd $openwrt_root
+        $GITHUB_WORKSPACE/$DIY_P2_SH
+
+    - name: 下载包
+      id: package
+      run: |
+        cd $openwrt_root
+        make defconfig
+        make download -j8
+        find dl -size -1024c -exec ls -l {} \;
+        find dl -size -1024c -exec rm -f {} \;
+
+    - name: 编译固件
+      id: compile
+      run: |
+        cd $openwrt_root
+        echo -e "$(nproc) thread compile"
+        # make -j$(nproc) || make -j1 V=s
+        make -j$(nproc) || status="false"
+        if [ "$status" == "false" ]; then
+          cd $openwrt_root/build_dir/target-aarch64_cortex-a53_musl/libffi-3.4.7 || echo "libffi-3.4.7目录不存在"
+          wget -qc https://github.com/QiYueYiya/openwrt-packages/releases/download/files/aarch64-openwrt-linux-gnu.tar.gz -O - | tar -xJ
+          cd $openwrt_root
+          make -j$(nproc) || make package/feeds/packages/libffi/compile V=s
+        fi
+        echo "status=success" >> $GITHUB_OUTPUT
+
+    - name: 整理文件
+      id: organize
+      if: steps.compile.outputs.status == 'success' && !cancelled()
+      run: |
+        # 整理固件包时候,删除您不想要的固件或者文件,让它不需要上传到Actions空间
+        cd $openwrt_root/bin/targets/*/*
+        mkdir -p package
+        mv packages package/core
+        mv package packages
+        mv $openwrt_root/bin/packages/*/* packages
+        tar -czf packages.tar.gz packages
+        rm -rf packages
+        mv *sysupgrade.itb ${{ github.workflow }}-$FIRMWARE_VERSION-squashfs-sysupgrade.itb
+        rm -rf version.buildinfo
+        rm -rf profiles.json
+        rm -rf feeds.buildinfo
+        rm -rf sha256sums
+        rm -rf *bl2.bin
+        rm -rf immortalwrt*
+        echo -e "$(sha256sum *)\n" > sha256sums
+        echo "FIRMWARE=$PWD" >> $GITHUB_ENV
+        echo "status=success" >> $GITHUB_OUTPUT
+
+    - name: 上传固件到Github Actions空间
+      if: steps.organize.outputs.status == 'success' && ${{ inputs.UPLOAD_FIRMWARE }} == 'true' && !cancelled()
+      uses: actions/upload-artifact@main
+      with:
+        name: ${{ github.workflow }}-$FIRMWARE_VERSION
+        path: $FIRMWARE
+
+    - name: 删除旧的Release
+      if: steps.organize.outputs.status == 'success' && ${{ inputs.UPLOAD_RELEASE }} == 'true' && !cancelled()
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        TAG_NAME: ${{ github.workflow }}
+      run: |
+        git push origin --delete ${{env.TAG_NAME}} || echo "远程标签不存在"
+        RELEASE_URL="https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG_NAME"
+        RELEASE_ID=$(curl -s -H "Authorization: token $GITHUB_TOKEN" $RELEASE_URL | jq -r '.id')
+        if [ "$RELEASE_ID" != "null" ]; then
+          echo "🗑️ 删除Release中: $RELEASE_ID..."
+          curl -X DELETE -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID"
+          echo "✅ Release删除成功!"
+        else
+          echo "⚠️ 未找到tag的Release: $TAG_NAME"
+        fi
+
+    - name: 创建release标签
+      id: tag
+      if: steps.organize.outputs.status == 'success' && ${{ inputs.UPLOAD_RELEASE }} == 'true' && !cancelled()
+      run: |
+        echo "编译时间：$(date -d "@$START_DATE" +"%Y年%m月%d日 %H点%M分")" >> release.txt
+        echo "默认网关：192.168.5.1" >> release.txt
+        echo 包含插件：$(grep "CONFIG_PACKAGE_luci-app-\(.*\)=y" $openwrt_root/.config | sed "s/CONFIG_PACKAGE_luci-app-\(.*\)=y/\1/g" | grep -v "_\|arpbind\|autoreboot\|firewall\|mtk\|opkg\|mtwifi\|ramfree\|package-manager") >> release.txt
+        echo "status=success" >> $GITHUB_OUTPUT
+
+    - name: 将固件上传到release历史
+      uses: softprops/action-gh-release@v1
+      if: steps.tag.outputs.status == 'success' && !cancelled()
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      id: upload-history
+      with:
+        name: ${{ github.workflow }}-${{ env.FIRMWARE_VERSION }}-history
+        tag_name: ${{ github.workflow }}-${{ env.FIRMWARE_VERSION }}
+        body_path: release.txt
+        files: ${{ env.FIRMWARE }}/*
+
+    - name: 将固件上传到release
+      uses: softprops/action-gh-release@v1
+      if: steps.tag.outputs.status == 'success' && !cancelled()
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      id: upload-release
+      with:
+        name: ${{ github.workflow }}-${{ env.FIRMWARE_VERSION }}
+        tag_name: ${{ github.workflow }}
+        body_path: release.txt
+        files: ${{ env.FIRMWARE }}/*
+
+    - name: Telegram 通知
+      if: always() && !cancelled()
+      env:
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        TELEGRAM_CHATID: ${{ secrets.TELEGRAM_CHATID }}
+        CONFIG_FILE: ${{ github.workflow }}/.config
+      run: |
+        duration=$((($(date +%s)-$START_DATE)/60)) && time=$((duration/60))小时$((duration%60))分钟
+        if [ "${{ steps.compile.outputs.status }}" == 'success' ]; then
+          content="🎉${{ github.workflow }}固件编译成功🎉%0A固件版本：$FIRMWARE_VERSION%0A编译用时：${time}"
+        else
+          content="❌${{ github.workflow }}固件编译失败❌%0A固件版本：$FIRMWARE_VERSION%0A编译用时：${time}"
+        fi
+        curl "https://api.telegram.org/bot${{ env.TELEGRAM_BOT_TOKEN }}/sendMessage?chat_id=${{ env.TELEGRAM_CHATID }}&text=${content}"
