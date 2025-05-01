@@ -23,7 +23,6 @@ on:
 env:
   REPO_URL: https://github.com/immortalwrt/immortalwrt.git
   REPO_BRANCH: openwrt-24.10
-  TOOLCHAIN_TAG: immortalwrt-toolchain
   UPLOAD_FIRMWARE: false
   UPLOAD_RELEASE: true
   TZ: Asia/Shanghai
@@ -97,14 +96,7 @@ jobs:
       run: |
         cd $openwrt_root
         echo -e "$(nproc) thread compile"
-        # make -j$(nproc) || make -j1 V=s
-        make -j$(nproc) || status="false"
-        if [ "$status" == "false" ]; then
-          cd $openwrt_root/build_dir/target-aarch64_cortex-a53_musl/libffi-3.4.7 || echo "libffi-3.4.7目录不存在"
-          wget -qc https://github.com/QiYueYiya/openwrt-packages/releases/download/files/aarch64-openwrt-linux-gnu.tar.gz -O - | tar -xJ
-          cd $openwrt_root
-          make -j$(nproc) || make package/feeds/packages/libffi/compile V=s
-        fi
+        make -j$(nproc) || make -j1 V=s
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: 整理文件
