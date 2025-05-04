@@ -223,9 +223,9 @@ jobs:
         mkdir -p output
         tar -Jcf output/toolchain.tar.xz -C openwrt .
         echo $CURRENT_HASH >> output/cache-hash.txt
+        df -hT $PWD
         cd output
         echo "output=$PWD" >> $GITHUB_ENV
-        df -hT $PWD
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: 上传Toolchain缓存文件
