@@ -175,6 +175,7 @@ jobs:
         echo "编译时间：$(date -d "@$START_DATE" +"%Y年%m月%d日 %H点%M分")" >> release.txt
         echo "默认网关：192.168.4.1" >> release.txt
         echo 包含插件：$(grep "CONFIG_PACKAGE_luci-app-\(.*\)=y" $openwrt_root/.config | sed "s/CONFIG_PACKAGE_luci-app-\(.*\)=y/\1/g" | grep -v "_\|arpbind\|autoreboot\|firewall\|mtk\|opkg\|mtwifi\|ramfree\|package-manager") >> release.txt
+        echo "更新日志：$COMMIT" >> release.txt
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: 将固件上传到release历史
@@ -182,9 +183,8 @@ jobs:
       if: steps.tag.outputs.status == 'success' && !cancelled()
       id: upload-history
       with:
-        name: ${{ github.workflow }}-${{ env.FIRMWARE_VERSION }}-history
-        tag_name: ${{ github.workflow }}-${{ env.FIRMWARE_VERSION }}
-        body_path: release.txt
+        name: 固件保留目录
+        tag_name: history
         files: ${{ env.FIRMWARE }}/*
 
     - name: 将固件上传到release
@@ -223,6 +223,7 @@ jobs:
         mkdir -p output
         tar -Jcf output/toolchain.tar.xz -C openwrt .
         echo $CURRENT_HASH >> output/cache-hash.txt
+        cd output
         echo "output=$PWD" >> $GITHUB_ENV
         df -hT $PWD
         echo "status=success" >> $GITHUB_OUTPUT
