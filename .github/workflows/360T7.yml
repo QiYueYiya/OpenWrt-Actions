@@ -49,6 +49,7 @@ jobs:
         sudo chown $USER:$GROUPS /mnt
         echo "FIRMWARE_VERSION=$(date +"%y%m%d")" >> $GITHUB_ENV
         echo "START_DATE=$(date +%s)" >> $GITHUB_ENV
+        echo "COMMIT=$(git show -s --format=%s HEAD | awk '{$1=$1;print}')" >> $GITHUB_ENV
 
     - name: 下载源码
       working-directory: /mnt
