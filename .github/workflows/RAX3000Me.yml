@@ -98,6 +98,10 @@ jobs:
         make download -j8
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
+        wget https://downloads.immortalwrt.org/releases/24.10-SNAPSHOT/targets/mediatek/filogic/immortalwrt-toolchain-24.10-SNAPSHOT-mediatek-filogic_gcc-13.3.0_musl.Linux-x86_64.tar.zst
+        tar -xf immortalwrt-toolchain* --zstd -C ex-toolchain
+        cd ex-toolchain/*/tool*
+        echo "ex-toolchain=$PWD" >> $GITHUB_ENV
 
     - name: 对比哈希值
       id: compare
@@ -118,20 +122,25 @@ jobs:
       id: compile
       run: |
         cd $openwrt_root
+        TARGET_NAME=$(echo $TARGET | sed "s/_/\//g")
+        ./scripts/ext-toolchain.sh --toolchain $ex-toolchain --overwrite-config --config $TARGET_NAME
         echo -e "$(nproc) thread compile"
         make tools/compile -j$(nproc)
         make toolchain/compile -j$(nproc)
         echo =========================================================
+        make package/feeds/packages/libffi/compile V=s || echo 第一次失败
+        ls build_dir/target-aarch64_cortex-a53_musl/libffi*
+        echo =========================================================
         ls package/feeds/packages/libffi
         sed -i 's/-gnu//g' package/feeds/packages/libffi/Makefile
-        make package/feeds/packages/libffi/compile V=s || echo 失败
+        make package/feeds/packages/libffi/compile V=s || echo 第二次失败
         ls build_dir/target-aarch64_cortex-a53_musl/libffi*
         echo =========================================================
         echo 重新开始
         echo =========================================================
         ls feeds/packages/libs/libffi
         sed -i 's/-gnu//g' feeds/packages/libs/libffi/Makefile
-        make feeds/packages/libs/libffi/compile V=s || echo 失败
+        make package/feeds/packages/libffi/compile V=s || echo 第三次失败
         ls build_dir/target-aarch64_cortex-a53_musl/libffi*
         echo =========================================================
         # make -j$(nproc) || make -j1 V=s
