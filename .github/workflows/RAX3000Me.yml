@@ -102,7 +102,7 @@ jobs:
         mkdir -p ex-toolchain
         tar -xf immortalwrt-toolchain* --zstd -C ex-toolchain
         cd ex-toolchain/*/tool*
-        echo "ex-toolchain=$PWD" >> $GITHUB_ENV
+        echo "extoolchain=$PWD" >> $GITHUB_ENV
 
     - name: 对比哈希值
       id: compare
@@ -124,7 +124,7 @@ jobs:
       run: |
         cd $openwrt_root
         TARGET_NAME=$(echo $TARGET | sed "s/_/\//g")
-        ./scripts/ext-toolchain.sh --toolchain $ex-toolchain --overwrite-config --config $TARGET_NAME
+        ./scripts/ext-toolchain.sh --toolchain $extoolchain --overwrite-config --config $TARGET_NAME
         echo -e "$(nproc) thread compile"
         make tools/compile -j$(nproc)
         make toolchain/compile -j$(nproc)
