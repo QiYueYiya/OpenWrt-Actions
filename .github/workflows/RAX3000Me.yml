@@ -99,6 +99,7 @@ jobs:
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
         wget https://downloads.immortalwrt.org/releases/24.10-SNAPSHOT/targets/mediatek/filogic/immortalwrt-toolchain-24.10-SNAPSHOT-mediatek-filogic_gcc-13.3.0_musl.Linux-x86_64.tar.zst
+        mkdir -p ex-toolchain
         tar -xf immortalwrt-toolchain* --zstd -C ex-toolchain
         cd ex-toolchain/*/tool*
         echo "ex-toolchain=$PWD" >> $GITHUB_ENV
