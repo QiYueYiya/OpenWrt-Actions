@@ -119,8 +119,23 @@ jobs:
       run: |
         cd $openwrt_root
         echo -e "$(nproc) thread compile"
-        make -j$(nproc) || make -j1 V=s
-        echo "status=success" >> $GITHUB_OUTPUT
+        make tools/compile -j$(nproc)
+        make toolchain/compile -j$(nproc)
+        echo =========================================================
+        ls package/feeds/packages/libffi
+        sed -i 's/-gnu//g' package/feeds/packages/libffi/Makefile
+        make package/feeds/packages/libffi/compile V=s || echo 失败
+        ls build_dir/target-aarch64_cortex-a53_musl/libffi*
+        echo =========================================================
+        echo 重新开始
+        echo =========================================================
+        ls feeds/packages/libs/libffi
+        sed -i 's/-gnu//g' feeds/packages/libs/libffi/Makefile
+        make feeds/packages/libs/libffi/compile V=s || echo 失败
+        ls build_dir/target-aarch64_cortex-a53_musl/libffi*
+        echo =========================================================
+        # make -j$(nproc) || make -j1 V=s
+        # echo "status=success" >> $GITHUB_OUTPUT
 
     - name: 整理文件
       id: organize
