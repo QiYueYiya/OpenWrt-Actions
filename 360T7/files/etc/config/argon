@@ -1,6 +1,6 @@
 
 config global
-    option primary '#e5bc9b'
+    option primary '#8858b0'
     option dark_primary '#6E5546'
     option blur '0'
     option blur_dark '0'
