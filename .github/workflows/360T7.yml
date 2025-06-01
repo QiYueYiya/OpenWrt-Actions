@@ -36,6 +36,45 @@ jobs:
     - name: 检查项目分支
       uses: actions/checkout@main
 
+    - name: "优化磁盘空间"
+      uses: "hugoalh/disk-space-optimizer-ghaction@main"
+      with:
+        operate_sudo: "True"
+        general_include: ".+"
+        general_exclude: |-
+          ^GCC$
+          ^G\+\+$
+          Clang
+          LLVM
+        docker_include: ".+"
+        docker_prune: "True"
+        docker_clean: "True"
+        apt_prune: "True"
+        apt_clean: "True"
+        homebrew_prune: "True"
+        homebrew_clean: "True"
+        npm_prune: "True"
+        npm_clean: "True"
+        os_swap: "True"
+
+    - name: 释放磁盘空间
+      uses: easimon/maximize-build-space@master
+      with: 
+        root-reserve-mb: 5120
+        swap-size-mb: 1
+        remove-dotnet: 'true'
+        remove-android: 'true'
+        remove-haskell: 'true'
+        remove-codeql: 'true'
+        remove-docker-images: 'true'
+
+    - name: 释放磁盘空间完成
+      run: |
+        echo "释放磁盘空间完成"
+        echo "=============================================================================="
+        df -hT
+        echo "=============================================================================="
+
     - name: 初始化编译环境
       env:
         DEBIAN_FRONTEND: noninteractive
@@ -53,7 +92,7 @@ jobs:
         echo "COMMIT=$(git log -1 --pretty=format:"%s" --${{ github.workflow }})" >> $GITHUB_ENV
 
     - name: 下载源码
-      working-directory: /mnt
+      working-directory: ./
       run: |
         df -hT $PWD
         git clone --single-branch -b $REPO_BRANCH $REPO_URL openwrt
@@ -100,7 +139,6 @@ jobs:
         make download -j8
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
-        exit 1
 
     - name: 对比哈希值
       id: compare
@@ -116,6 +154,13 @@ jobs:
           wget -qc https://github.com/$CACHE_REPO/releases/download/$SOURCE_NAME-$TARGET-toolchain/toolchain.tar.xz -O - | tar -xJ
           sed -i 's/ $(tool.*\/stamp-compile)//;' Makefile
         fi
+
+    - name: Fix libffi build
+      run: |
+        mkdir -p build_dir/target-aarch64_cortex-a53_musl/libffi-3.4.6/aarch64-openwrt-linux-gnu
+        touch build_dir/target-aarch64_cortex-a53_musl/libffi-3.4.6/aarch64-openwrt-linux-gnu/fficonfig.h
+        ls build_dir/target-aarch64_cortex-a53_musl/libffi-3.4.6/aarch64-openwrt-linux-gnu
+        exit 1
 
     - name: 编译固件
       id: compile
