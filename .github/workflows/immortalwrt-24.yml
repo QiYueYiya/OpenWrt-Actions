@@ -136,7 +136,7 @@ jobs:
         rm -rf packages
         rm -rf version.buildinfo
         rm -rf profiles.json
-        # rm -rf *rootfs*
+        rm -rf *squashfs-rootfs*
         rm -rf *kernel*
         rm -rf *.manifest
         rm -rf feeds.buildinfo
@@ -189,7 +189,7 @@ jobs:
       with:
         name: 固件保留目录
         tag_name: history
-        files: ${{ env.FIRMWARE }}/*
+        files: ${{ env.FIRMWARE }}/*x86-64-generic*
 
     - name: 将固件上传到release
       uses: softprops/action-gh-release@v2
