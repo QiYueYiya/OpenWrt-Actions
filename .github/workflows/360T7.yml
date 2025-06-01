@@ -33,9 +33,6 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-    - name: 检查项目分支
-      uses: actions/checkout@main
-
     - name: "优化磁盘空间"
       uses: "hugoalh/disk-space-optimizer-ghaction@main"
       with:
@@ -74,6 +71,9 @@ jobs:
         echo "=============================================================================="
         df -hT
         echo "=============================================================================="
+
+    - name: 检查项目分支
+      uses: actions/checkout@main
 
     - name: 初始化编译环境
       env:
