@@ -159,8 +159,10 @@ jobs:
       run: |
         cd $openwrt_root
         echo -e "$(nproc) thread compile"
-        make -j$(nproc) || make -j1 V=s
-        echo "status=success" >> $GITHUB_OUTPUT
+        make toolchain/install -j$(nproc)
+        make package/feeds/packages/libffi/compile V=s
+        # make -j$(nproc) || make -j1 V=s
+        # echo "status=success" >> $GITHUB_OUTPUT
 
     - name: 整理文件
       id: organize
