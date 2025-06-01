@@ -189,7 +189,7 @@ jobs:
       with:
         name: 固件保留目录
         tag_name: history
-        files: ${{ env.FIRMWARE }}/*
+        files: ${{ env.FIRMWARE }}/*sysupgrade.itb
 
     - name: 将固件上传到release
       uses: softprops/action-gh-release@v2
