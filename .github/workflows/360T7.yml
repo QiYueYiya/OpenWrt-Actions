@@ -96,9 +96,11 @@ jobs:
       run: |
         cd $openwrt_root
         make defconfig
+        cat .config | grep libffi
         make download -j8
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
+        exit 1
 
     - name: 对比哈希值
       id: compare
