@@ -135,7 +135,6 @@ jobs:
       run: |
         cd $openwrt_root
         make defconfig
-        cat .config | grep libffi
         make download -j8
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
@@ -154,13 +153,6 @@ jobs:
           wget -qc https://github.com/$CACHE_REPO/releases/download/$SOURCE_NAME-$TARGET-toolchain/toolchain.tar.xz -O - | tar -xJ
           sed -i 's/ $(tool.*\/stamp-compile)//;' Makefile
         fi
-
-    - name: Fix libffi build
-      run: |
-        mkdir -p build_dir/target-aarch64_cortex-a53_musl/libffi-3.4.6/aarch64-openwrt-linux-gnu
-        touch build_dir/target-aarch64_cortex-a53_musl/libffi-3.4.6/aarch64-openwrt-linux-gnu/fficonfig.h
-        ls build_dir/target-aarch64_cortex-a53_musl/libffi-3.4.6/aarch64-openwrt-linux-gnu
-        exit 1
 
     - name: 编译固件
       id: compile
