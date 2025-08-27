@@ -23,7 +23,6 @@ on:
 env:
   REPO_URL: https://github.com/immortalwrt/immortalwrt.git
   REPO_BRANCH: openwrt-23.05
-  CACHE_REPO: QiYueYiya/openwrt-packages
   UPLOAD_FIRMWARE: false
   UPLOAD_RELEASE: true
   TZ: Asia/Shanghai
@@ -43,14 +42,12 @@ jobs:
         sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
         sudo apt update
         sudo bash -c 'bash <(curl -s https://build-scripts.immortalwrt.org/init_build_environment.sh)'
-        sudo apt-get install -y libffi-dev
         sudo apt autoremove --purge
         sudo apt clean
         sudo timedatectl set-timezone "$TZ"
         sudo chown $USER:$GROUPS /mnt
         echo "FIRMWARE_VERSION=$(date +"%y%m%d")" >> $GITHUB_ENV
         echo "START_DATE=$(date +%s)" >> $GITHUB_ENV
-        echo "COMMIT=$(git log -1 --pretty=format:"%s" --${{ github.workflow }})" >> $GITHUB_ENV
 
     - name: 下载源码
       working-directory: /mnt
@@ -59,8 +56,6 @@ jobs:
         git clone --single-branch -b $REPO_BRANCH $REPO_URL openwrt
         cd openwrt
         echo "openwrt_root=$PWD" >> $GITHUB_ENV
-        export CURRENT_HASH=$(git log --pretty=tformat:"%h" -n1 tools toolchain)
-        echo "CURRENT_HASH=$CURRENT_HASH" >> $GITHUB_ENV
 
     - name: 加载软件源
       env:
@@ -86,10 +81,6 @@ jobs:
         chmod +x $DIY_P2_SH
         cd $openwrt_root
         $GITHUB_WORKSPACE/$DIY_P2_SH
-        export SOURCE_NAME=$(echo $REPO_URL | awk -F '/' '{print $(NF-1)}')
-        echo "SOURCE_NAME=$SOURCE_NAME" >> $GITHUB_ENV
-        export CACHE_TARGET=$(grep -oP 'CONFIG_TARGET_\K[^_]+_[^_]+(?==y)' .config | head -n 1)
-        echo "CACHE_TARGET=$CACHE_TARGET" >> $GITHUB_ENV
 
     - name: 下载包
       id: package
@@ -99,21 +90,6 @@ jobs:
         make download -j8
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
-
-    - name: 对比哈希值
-      id: compare
-      continue-on-error: true
-      run: |
-        cd $openwrt_root
-        echo "CURRENT_HASH is $CURRENT_HASH"
-        export CACHE_HASH=$(curl -fSsL https://github.com/$CACHE_REPO/releases/download/$SOURCE_NAME-$CACHE_TARGET-toolchain/cache-hash.txt)
-        echo "CACHE_HASH is $CACHE_HASH"
-        if [ -z "$CACHE_HASH" ] || [ "$CURRENT_HASH" != "$CACHE_HASH" ]; then
-          echo "NEED_CACHE=true" >> $GITHUB_OUTPUT
-        elif [ "$CURRENT_HASH" == "$CACHE_HASH" ]; then
-          wget -qc https://github.com/$CACHE_REPO/releases/download/$SOURCE_NAME-$CACHE_TARGET-toolchain/toolchain.tar.xz -O - | tar -xJ
-          sed -i 's/ $(tool.*\/stamp-compile)//;' Makefile
-        fi
 
     - name: 编译固件
       id: compile
@@ -136,6 +112,7 @@ jobs:
         tar -czf packages.tar.gz packages
         rm -rf packages
         mv *sysupgrade.itb ${{ github.workflow }}-$FIRMWARE_VERSION-squashfs-sysupgrade.itb
+        mv immortalwrt-sdk* ${{ github.workflow }}-$FIRMWARE_VERSION-SDK.tar.xz
         rm -rf version.buildinfo
         rm -rf profiles.json
         rm -rf feeds.buildinfo
@@ -177,7 +154,7 @@ jobs:
         echo "编译时间：$(date -d "@$START_DATE" +"%Y年%m月%d日 %H点%M分")" >> release.txt
         echo "默认网关：192.168.4.1" >> release.txt
         echo 包含插件：$(grep "CONFIG_PACKAGE_luci-app-\(.*\)=y" $openwrt_root/.config | sed "s/CONFIG_PACKAGE_luci-app-\(.*\)=y/\1/g" | grep -v "_\|arpbind\|autoreboot\|firewall\|mtk\|opkg\|mtwifi\|ramfree\|package-manager") >> release.txt
-        echo "更新日志：$COMMIT" >> release.txt
+        echo "更新日志：" >> release.txt
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: 将固件上传到release历史
@@ -212,32 +189,3 @@ jobs:
           content="❌${{ github.workflow }}固件编译失败❌%0A固件版本：$FIRMWARE_VERSION%0A编译用时：${time}"
         fi
         curl "https://api.telegram.org/bot${{ env.TELEGRAM_BOT_TOKEN }}/sendMessage?chat_id=${{ env.TELEGRAM_CHATID }}&text=${content}"
-
-    - name: 整理Toolchain缓存文件
-      id: cache
-      if: steps.compile.outputs.status == 'success' && steps.compare.outputs.NEED_CACHE == 'true' && !cancelled()
-      run: |
-        cd $openwrt_root
-        find -maxdepth 1 -not -name staging_dir -not -name build_dir -not -name . | xargs rm -rf {}
-        rm -rf build_dir/target*
-        rm -rf staging_dir/target*
-        cd ..
-        mkdir -p output
-        tar -Jcf output/toolchain.tar.xz -C openwrt .
-        echo $CURRENT_HASH >> output/cache-hash.txt
-        df -hT $PWD
-        cd output
-        echo "output=$PWD" >> $GITHUB_ENV
-        echo "status=success" >> $GITHUB_OUTPUT
-
-    - name: 上传Toolchain缓存文件
-      uses: softprops/action-gh-release@v2
-      if: steps.cache.outputs.status == 'success' && steps.compare.outputs.NEED_CACHE == 'true' && !cancelled()
-      id: upload-cache
-      with:
-        repository: ${{ env.CACHE_REPO }}
-        token: ${{ secrets.PACKAGES_RELEASES }}
-        name: ${{ env.SOURCE_NAME }}-${{ env.CACHE_TARGET }}-toolchain
-        tag_name: ${{ env.SOURCE_NAME }}-${{ env.CACHE_TARGET }}-toolchain
-        body: CURRENT_HASH is ${{ env.CURRENT_HASH }}
-        files: ${{ env.output }}/*
