@@ -251,7 +251,7 @@ jobs:
           TELEGRAM_CHATID: ${{ secrets.TELEGRAM_CHATID }}
         run: |
           duration=$((($(date +%s)-$START_DATE)/60)) && time=$((duration/60))小时$((duration%60))分钟
-          if [ "${{ steps.compile.outputs.status }}" == 'success' ]; then
+          if [ "${{ steps.compile.outputs.status }}" = 'success' ]; then
             content="🎉${{ matrix.job.device }}固件编译成功🎉%0A固件版本：$FIRMWARE_VERSION%0A编译用时：${time}"
           else
             content="❌${{ matrix.job.device }}固件编译失败❌%0A固件版本：$FIRMWARE_VERSION%0A编译用时：${time}"
