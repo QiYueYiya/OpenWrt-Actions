@@ -115,7 +115,7 @@ jobs:
           config_prefix="CONFIG_TARGET_"
           config_line=""
           for target in $target_arr; do
-            config_line+="${target}_"
+            config_line="${config_line}${target}_"
             echo "${config_prefix}${config_line%_}=y" >> .config
           done
           echo "生成默认配置"
