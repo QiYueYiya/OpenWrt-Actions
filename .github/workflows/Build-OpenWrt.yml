@@ -119,12 +119,14 @@ jobs:
           CONFIG_FILES: build/${{ matrix.job.target }}/${{ matrix.job.device }}/files
           CONFIG_FILE: build/${{ matrix.job.target }}/${{ matrix.job.device }}/.config
         run: |
-          chmod +x $DIY_PACKAGE $DIY_DEVICE
-          cd $openwrt_root
-          $GITHUB_WORKSPACE/$DIY_PACKAGE
-          $GITHUB_WORKSPACE/$DIY_DEVICE
           [ -e $CONFIG_FILES ] && mv $CONFIG_FILES $openwrt_root/files
           [ -e $CONFIG_FILE ] && mv $CONFIG_FILE $openwrt_root/.config
+          chmod +x $DIY_PACKAGE $DIY_DEVICE
+          cd $openwrt_root
+          echo "自定义软件源"
+          $GITHUB_WORKSPACE/$DIY_PACKAGE
+          echo "自定义设备相关"
+          $GITHUB_WORKSPACE/$DIY_DEVICE
 
       - name: 下载包
         id: package
