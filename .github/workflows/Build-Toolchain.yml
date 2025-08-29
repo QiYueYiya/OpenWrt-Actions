@@ -89,7 +89,7 @@ jobs:
             echo "CACHE_EXISTS=false" >> $GITHUB_OUTPUT
             echo "未找到缓存，继续后续操作"
           fi
-          
+
       - name: 恢复工具链缓存（仅定时触发且有缓存时）
         if: github.event_name == 'schedule' && steps.check_cache.outputs.CACHE_EXISTS == 'true'
         uses: actions/cache@v4
@@ -132,11 +132,11 @@ jobs:
         id: compile
         run: |
           cd $openwrt_root
-          echo -e "$(nproc) thread compile"
-          make toolchain/install -j$(nproc) | tee build.log || build_status=FAILED
-          if [ "$build_status" = "FAILED" ]; then
+          echo "将使用 $(nproc) 线程编译"
+          make toolchain/install -j$(nproc) | tee build.log
+          failed_targets=$(grep -oE 'ERROR: ([^ ]+) failed to build\.' build.log | awk '{print $2}')
+          if [ -n "$failed_targets" ]; then
             echo "编译失败，提取error行并尝试使用单线程重新编译"
-            failed_targets=$(grep -oE 'ERROR: ([^ ]+) failed to build\.' build.log | awk '{print $2}')
             for target in $failed_targets; do
               echo "重新编译失败目标: $target"
               make $target/compile V=s || true

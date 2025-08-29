@@ -150,11 +150,11 @@ jobs:
             echo "使用工具链缓存编译"
             sed -i 's/ $(tool.*\/stamp-compile)//;' Makefile
           fi
-          echo -e "将使用 $(nproc) 线程编译"
-          make -j$(nproc) | tee build.log || build_status=FAILED
-          if [ "$build_status" = "FAILED" ]; then
+          echo "将使用 $(nproc) 线程编译"
+          make -j$(nproc) | tee build.log
+          failed_targets=$(grep -oE 'ERROR: ([^ ]+) failed to build\.' build.log | awk '{print $2}')
+          if [ -n "$failed_targets" ]; then
             echo "编译失败，提取error行并尝试使用单线程重新编译"
-            failed_targets=$(grep -oE 'ERROR: ([^ ]+) failed to build\.' build.log | awk '{print $2}')
             for target in $failed_targets; do
               echo "重新编译失败目标: $target"
               make $target/compile V=s || true
