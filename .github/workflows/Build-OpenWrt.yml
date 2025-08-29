@@ -1,0 +1,255 @@
+name: Build OpenWrt
+
+on:
+  workflow_call:
+  workflow_dispatch:
+  push:
+    branches:
+      - 23.05
+    paths:
+      - 'build/**/.config'
+  schedule:
+    - cron: "0 0 * * 1"
+
+env:
+  REPO_URL: https://github.com/immortalwrt/immortalwrt.git
+  REPO_BRANCH: openwrt-23.05
+  UPLOAD_FIRMWARE: false
+  UPLOAD_RELEASE: true
+  TZ: Asia/Shanghai
+
+jobs:
+  build_tools:
+    uses: ./.github/workflows/Build-Toolchain.yml
+
+  get_devices:
+    name: Get Devices
+    needs: build_tools
+    runs-on: ubuntu-22.04
+    if: always()
+    outputs:
+      device_list: ${{ steps.devices.outputs.device_list }}
+      repo_owner: ${{ steps.lower.outputs.repo_owner }}
+    steps:
+      - name: 检查项目分支
+        uses: actions/checkout@v4
+
+      - name: 获取所有设备
+        id: devices
+        run: |
+          result=""
+          while read dir; do
+            if [ -f "$dir/diy_package.sh" ]; then
+              arch_name=$(echo "$dir" | sed 's#build/##;s#/#/#g')
+              for d in build/$arch_name/*; do
+                [ -d "$d" ] || continue
+                dev=$(basename "$d")
+                item="{\"target\": \"$arch_name\",\"device\": \"$dev\"}"
+                if [ -z "$result" ]; then
+                  result="$item"
+                else
+                  result="$result,$item"
+                fi
+              done
+            fi
+          done < <(find build -type d ! -path "build")
+          echo "[$result]"
+          echo "device_list=[$result]" >> $GITHUB_OUTPUT
+
+      - name: 设置小写仓库名
+        id: lower
+        run: |
+          echo "repo_owner=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
+  build_openwrt:
+    name: Build ${{ matrix.job.device }}
+    needs: get_devices
+    runs-on: ubuntu-22.04
+    container:
+      image: ghcr.io/${{ needs.get_devices.outputs.repo_owner }}/openwrt-build:latest
+      options: --mount type=bind,source=/mnt,target=/mnt
+    strategy:
+      fail-fast: false
+      matrix:
+        job: ${{ fromJson(needs.get_devices.outputs.device_list) }}
+    steps:
+      - name: 检查项目分支
+        uses: actions/checkout@main
+
+      - name: 打印设备列表
+        run: |
+          echo "架构：${{ matrix.job.target }}"
+          echo "设备：${{ matrix.job.device }}"
+
+      - name: 初始化编译环境
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          chown $USER:$GROUPS /mnt
+          echo "FIRMWARE_VERSION=$(date +"%y%m%d")" >> $GITHUB_ENV
+          echo "START_DATE=$(date +%s)" >> $GITHUB_ENV
+
+      - name: 下载源码
+        working-directory: /mnt
+        run: |
+          df -hT $PWD
+          git clone --single-branch -b $REPO_BRANCH $REPO_URL openwrt
+          cd openwrt
+          echo "openwrt_root=$PWD" >> $GITHUB_ENV
+          export target=$(echo "${{ matrix.job.target }}" | sed 's#/#_#g')
+          echo "target=$target" >> $GITHUB_ENV
+          export CURRENT_HASH=$(git log --pretty=format:"%H" -n1 tools toolchain)
+          echo "CURRENT_HASH=$CURRENT_HASH" >> $GITHUB_ENV
+
+      - name: 更新并安装软件源
+        env:
+          FEEDS_CONF: ${{ matrix.job.target }}/feeds.conf.default
+        run: |
+          [ -e $FEEDS_CONF ] && mv $FEEDS_CONF $openwrt_root/feeds.conf.default
+          cd $openwrt_root
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: 加载自定义配置
+        env:
+          DIY_PACKAGE: build/${{ matrix.job.target }}/diy_package.sh
+          DIY_DEVICE: build/${{ matrix.job.target }}/${{ matrix.job.device }}/diy_device.sh
+          CONFIG_FILES: build/${{ matrix.job.target }}/${{ matrix.job.device }}/files
+          CONFIG_FILE: build/${{ matrix.job.target }}/${{ matrix.job.device }}/.config
+        run: |
+          chmod +x $DIY_PACKAGE $DIY_DEVICE
+          cd $openwrt_root
+          $GITHUB_WORKSPACE/$DIY_PACKAGE
+          $GITHUB_WORKSPACE/$DIY_DEVICE
+          [ -e $CONFIG_FILES ] && mv $CONFIG_FILES $openwrt_root/files
+          [ -e $CONFIG_FILE ] && mv $CONFIG_FILE $openwrt_root/.config
+
+      - name: 下载包
+        id: package
+        run: |
+          cd $openwrt_root
+          make defconfig
+          make download -j8
+          find dl -size -1024c -exec ls -l {} \;
+          find dl -size -1024c -exec rm -f {} \;
+
+      - name: 恢复工具链缓存
+        id: cache-toolchain
+        uses: actions/cache@v4
+        with:
+          key: ${{ env.REPO_BRANCH }}-${{ env.target }}-${{ env.CURRENT_HASH }}
+          path: |
+            ${{ env.openwrt_root }}/build_dir
+            ${{ env.openwrt_root }}/staging_dir
+
+      - name: 编译固件
+        id: compile
+        run: |
+          cd $openwrt_root
+          if [ "${{ steps.cache-toolchain.outputs.cache-hit }}" = "true" ]; then
+            echo "使用工具链缓存编译"
+            sed -i 's/ $(tool.*\/stamp-compile)//;' Makefile
+          fi
+          echo -e "将使用 $(nproc) 线程编译"
+          make -j$(nproc) | tee build.log || build_status=FAILED
+          if [ "$build_status" = "FAILED" ]; then
+            echo "编译失败，提取error行并尝试使用单线程重新编译"
+            failed_targets=$(grep -oE 'ERROR: ([^ ]+) failed to build\.' build.log | awk '{print $2}')
+            for target in $failed_targets; do
+              echo "重新编译失败目标: $target"
+              make $target/compile V=s || true
+            done
+            exit 1
+          fi
+          echo "status=success" >> $GITHUB_OUTPUT
+
+      - name: 整理文件
+        id: organize
+        if: steps.compile.outputs.status == 'success' && !cancelled()
+        run: |
+          # 整理固件包时候,删除您不想要的固件或者文件,让它不需要上传到Actions空间
+          cd $openwrt_root/bin/targets/*/*
+          mkdir -p package
+          mv packages package/core
+          mv package packages
+          mv $openwrt_root/bin/packages/*/* packages
+          tar -czf packages.tar.gz packages
+          rm -rf packages
+          mv *sysupgrade.itb ${{ matrix.job.device }}-$FIRMWARE_VERSION-squashfs-sysupgrade.itb
+          mv immortalwrt-sdk* ${{ matrix.job.device }}-$FIRMWARE_VERSION-SDK.tar.xz
+          rm -rf version.buildinfo
+          rm -rf profiles.json
+          rm -rf feeds.buildinfo
+          rm -rf sha256sums
+          rm -rf *bl2.bin
+          rm -rf immortalwrt*
+          echo -e "$(sha256sum *)\n" > sha256sums
+          echo "FIRMWARE=$PWD" >> $GITHUB_ENV
+          echo "status=success" >> $GITHUB_OUTPUT
+
+      - name: 上传固件到Github Actions空间
+        if: steps.organize.outputs.status == 'success' && env.UPLOAD_FIRMWARE == 'true' && !cancelled()
+        uses: actions/upload-artifact@main
+        with:
+          name: ${{ matrix.job.device }}-$FIRMWARE_VERSION
+          path: $FIRMWARE
+
+      - name: 删除旧的Release
+        if: steps.organize.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true' && !cancelled()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ matrix.job.device }}
+        run: |
+          git push origin --delete ${{env.TAG_NAME}} || echo "远程标签不存在"
+          RELEASE_URL="https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG_NAME"
+          RELEASE_ID=$(curl -s -H "Authorization: token $GITHUB_TOKEN" $RELEASE_URL | jq -r '.id')
+          if [ "$RELEASE_ID" != "null" ]; then
+            echo "🗑️ 删除Release中: $RELEASE_ID..."
+            curl -X DELETE -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID"
+            echo "✅ Release删除成功!"
+          else
+            echo "⚠️ 未找到tag的Release: $TAG_NAME"
+          fi
+
+      - name: 创建release标签
+        id: tag
+        if: steps.organize.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true' && !cancelled()
+        run: |
+          echo "编译时间：$(date -d "@$START_DATE" +"%Y年%m月%d日 %H点%M分")" >> release.txt
+          echo "默认网关：192.168.5.1" >> release.txt
+          echo 包含插件：$(grep "CONFIG_PACKAGE_luci-app-\(.*\)=y" $openwrt_root/.config | sed "s/CONFIG_PACKAGE_luci-app-\(.*\)=y/\1/g" | grep -v "_\|arpbind\|autoreboot\|firewall\|mtk\|opkg\|mtwifi\|ramfree\|package-manager") >> release.txt
+          echo "更新日志：" >> release.txt
+          echo "status=success" >> $GITHUB_OUTPUT
+
+      - name: 将固件上传到release历史
+        uses: softprops/action-gh-release@v2
+        if: steps.tag.outputs.status == 'success' && !cancelled()
+        id: upload-history
+        with:
+          name: 固件保留目录
+          tag_name: history
+          files: ${{ env.FIRMWARE }}/*sysupgrade.itb
+
+      - name: 将固件上传到release
+        uses: softprops/action-gh-release@v2
+        if: steps.tag.outputs.status == 'success' && !cancelled()
+        id: upload-release
+        with:
+          name: ${{ matrix.job.device }}-${{ env.FIRMWARE_VERSION }}
+          tag_name: ${{ matrix.job.device }}
+          body_path: release.txt
+          files: ${{ env.FIRMWARE }}/*
+
+      - name: Telegram 通知
+        if: always() && !cancelled()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHATID: ${{ secrets.TELEGRAM_CHATID }}
+        run: |
+          duration=$((($(date +%s)-$START_DATE)/60)) && time=$((duration/60))小时$((duration%60))分钟
+          if [ "${{ steps.compile.outputs.status }}" == 'success' ]; then
+            content="🎉${{ matrix.job.device }}固件编译成功🎉%0A固件版本：$FIRMWARE_VERSION%0A编译用时：${time}"
+          else
+            content="❌${{ matrix.job.device }}固件编译失败❌%0A固件版本：$FIRMWARE_VERSION%0A编译用时：${time}"
+          fi
+          curl "https://api.telegram.org/bot${{ env.TELEGRAM_BOT_TOKEN }}/sendMessage?chat_id=${{ env.TELEGRAM_CHATID }}&text=${content}"

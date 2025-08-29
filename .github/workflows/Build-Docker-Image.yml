@@ -1,0 +1,42 @@
+name: Build Docker Image
+
+on:
+  push:
+    branches:
+      - 23.05
+    paths:
+      - 'Dockerfile'
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 1 * *'
+
+jobs:
+  build-docker:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+      
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 登录 GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 设置小写仓库名
+        id: lower
+        run: |
+          echo "repo_owner=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
+      - name: 构建并推送 Docker 镜像
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/${{ steps.lower.outputs.repo_owner }}/openwrt-build:latest

@@ -1,0 +1,157 @@
+name: Build Toolchain
+
+on:
+  workflow_call:
+  workflow_dispatch:
+  # push:
+  #   branches:
+  #     - docker-build
+  #   paths:
+  #     - '.github/workflows/Build-Toolchain.yml'
+  schedule:
+    - cron: "0 20 * * *"
+
+env:
+  REPO_URL: https://github.com/immortalwrt/immortalwrt.git
+  REPO_BRANCH: openwrt-23.05
+  TZ: Asia/Shanghai
+
+jobs:
+  get_targets:
+    name: Get Targets
+    runs-on: ubuntu-22.04
+    outputs:
+      target_list: ${{ steps.get_targets.outputs.target_list }}
+      repo_owner: ${{ steps.lower.outputs.repo_owner }}
+    steps:
+      - name: 检查项目分支
+        uses: actions/checkout@main
+
+      - name: 获取所有架构
+        id: get_targets
+        run: |
+          result=""
+          while read dir; do
+            if [ -f "$dir/diy_package.sh" ]; then
+              arch_name=$(echo "$dir" | sed 's#build/##;s#/#/#g')
+              if [ -z "$result" ]; then
+                result="\"$arch_name\""
+              else
+                result="$result,\"$arch_name\""
+              fi
+            fi
+          done < <(find build -type d ! -path "build")
+          echo "target_list=[$result]" >> $GITHUB_OUTPUT
+
+      - name: 设置小写仓库名
+        id: lower
+        run: |
+          echo "repo_owner=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
+  build_toolchain:
+    name: Build Toolchain
+    needs: get_targets
+    runs-on: ubuntu-22.04
+    container:
+      image: ghcr.io/${{ needs.get_targets.outputs.repo_owner }}/openwrt-build:latest
+      options: --mount type=bind,source=/mnt,target=/mnt
+    strategy:
+      matrix:
+        target: ${{ fromJson(needs.get_targets.outputs.target_list) }}
+    steps:
+      - name: 下载源码
+        run: |
+          chown $USER:$GROUPS /mnt
+          cd /mnt
+          df -hT $PWD
+          git clone --single-branch -b $REPO_BRANCH $REPO_URL openwrt
+          cd openwrt
+          echo "openwrt_root=$PWD" >> $GITHUB_ENV
+          export target=$(echo "${{ matrix.target }}" | sed 's#/#_#g')
+          echo "target=$target" >> $GITHUB_ENV
+          export CURRENT_HASH=$(git log --pretty=format:"%H" -n1 tools toolchain)
+          echo "CURRENT_HASH=$CURRENT_HASH" >> $GITHUB_ENV
+
+      - name: 检查缓存是否存在
+        id: check_cache
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          CACHE_KEY=$REPO_BRANCH-$target-$CURRENT_HASH
+          cache_count=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/caches" | \
+            jq ".actions_caches[] | select(.key==\"$CACHE_KEY\") | .id" | wc -l)
+          if [ "$cache_count" -gt 0 ]; then
+            echo "CACHE_EXISTS=true" >> $GITHUB_OUTPUT
+            echo "已存在缓存，跳过后续操作"
+          else
+            echo "CACHE_EXISTS=false" >> $GITHUB_OUTPUT
+            echo "未找到缓存，继续后续操作"
+          fi
+          
+      - name: 恢复工具链缓存（仅定时触发且有缓存时）
+        if: github.event_name == 'schedule' && steps.check_cache.outputs.CACHE_EXISTS == 'true'
+        uses: actions/cache@v4
+        with:
+          key: ${{ env.REPO_BRANCH }}-${{ env.target }}-${{ env.CURRENT_HASH }}
+          path: |
+            ${{ env.openwrt_root }}/build_dir
+            ${{ env.openwrt_root }}/staging_dir
+
+      - name: 更新并安装软件源
+        if: steps.check_cache.outputs.CACHE_EXISTS != 'true'
+        run: |
+          cd $openwrt_root
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: 下载包
+        if: steps.check_cache.outputs.CACHE_EXISTS != 'true'
+        run: |
+          cd $openwrt_root
+          echo "设置编译架构"
+          target_arr=$(echo "${{ matrix.target }}" | tr '/' ' ')
+          config_prefix="CONFIG_TARGET_"
+          config_line=""
+          for target in $target_arr; do
+            config_line+="${target}_"
+            echo "${config_prefix}${config_line%_}=y" >> .config
+          done
+          echo "生成默认配置"
+          make defconfig
+          # make download -j8
+          make tools/flock/compile -j$(nproc)
+          make tools/download -j8
+          make toolchain/download -j8
+          find dl -size -1024c -exec ls -l {} \;
+          find dl -size -1024c -exec rm -f {} \;
+
+      - name: 编译固件
+        if: steps.check_cache.outputs.CACHE_EXISTS != 'true'
+        id: compile
+        run: |
+          cd $openwrt_root
+          echo -e "$(nproc) thread compile"
+          make toolchain/install -j$(nproc) | tee build.log || build_status=FAILED
+          if [ "$build_status" = "FAILED" ]; then
+            echo "编译失败，提取error行并尝试使用单线程重新编译"
+            failed_targets=$(grep -oE 'ERROR: ([^ ]+) failed to build\.' build.log | awk '{print $2}')
+            for target in $failed_targets; do
+              echo "重新编译失败目标: $target"
+              make $target/compile V=s || true
+            done
+            exit 1
+          fi
+          rm -rf build_dir/target*
+          rm -rf staging_dir/target*
+          echo "status=true" >> $GITHUB_OUTPUT
+
+      - name: 保存工具链缓存
+        if: steps.compile.outputs.status == 'true'
+        uses: actions/cache@v4
+        with:
+          key: ${{ env.REPO_BRANCH }}-${{ env.target }}-${{ env.CURRENT_HASH }}
+          path: |
+            ${{ env.openwrt_root }}/build_dir
+            ${{ env.openwrt_root }}/staging_dir
