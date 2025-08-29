@@ -11,14 +11,14 @@
 name: 360T7
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - '360T7/.config'
+  # push:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - '360T7/.config'
   workflow_dispatch:
-  schedule:
-    - cron: '0 4 1 * *'
+  # schedule:
+  #   - cron: '0 4 1 * *'
 
 env:
   REPO_URL: https://github.com/immortalwrt/immortalwrt.git
