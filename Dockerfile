@@ -1,5 +1,7 @@
 FROM ubuntu:22.04
 
+SHELL ["/bin/bash", "-c"]
+
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ='Asia/Shanghai'
 
