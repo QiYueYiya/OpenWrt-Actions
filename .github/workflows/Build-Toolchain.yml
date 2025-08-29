@@ -54,15 +54,24 @@ jobs:
     runs-on: ubuntu-22.04
     container:
       image: ghcr.io/${{ needs.get_targets.outputs.repo_owner }}/openwrt-build:latest
-      options: --mount type=bind,source=/mnt,target=/mnt
+      options: --mount type=bind,source=/mnt,target=/mnt --user runner:docker
     strategy:
       matrix:
         target: ${{ fromJson(needs.get_targets.outputs.target_list) }}
     steps:
-      - name: 下载源码
+      - name: 设置工作目录
         run: |
-          chown $USER:$GROUPS /mnt
-          cd /mnt
+          echo "用户: $(whoami), 组: $(groups)"
+          echo "修改前目录权限"
+          ls -ld /mnt
+          sudo chown runner:docker /mnt
+          sudo chmod 777 /mnt
+          echo "修改后目录权限"
+          ls -ld /mnt
+
+      - name: 下载源码
+        working-directory: /mnt
+        run: |
           df -hT $PWD
           git clone --single-branch -b $REPO_BRANCH $REPO_URL openwrt
           cd openwrt

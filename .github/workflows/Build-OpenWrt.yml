@@ -67,7 +67,7 @@ jobs:
     runs-on: ubuntu-22.04
     container:
       image: ghcr.io/${{ needs.get_devices.outputs.repo_owner }}/openwrt-build:latest
-      options: --mount type=bind,source=/mnt,target=/mnt
+      options: --mount type=bind,source=/mnt,target=/mnt --user runner:docker
     strategy:
       fail-fast: false
       matrix:
@@ -76,23 +76,23 @@ jobs:
       - name: 检查项目分支
         uses: actions/checkout@main
 
-      - name: 打印设备列表
+      - name: 设置工作目录
         run: |
-          echo "架构：${{ matrix.job.target }}"
-          echo "设备：${{ matrix.job.device }}"
-
-      - name: 初始化编译环境
-        env:
-          DEBIAN_FRONTEND: noninteractive
-        run: |
-          chown $USER:$GROUPS /mnt
-          echo "FIRMWARE_VERSION=$(date +"%y%m%d")" >> $GITHUB_ENV
-          echo "START_DATE=$(date +%s)" >> $GITHUB_ENV
-
+          echo "用户: $(whoami), 组: $(groups)"
+          echo "修改前目录权限"
+          ls -ld /mnt
+          sudo chown runner:docker /mnt
+          sudo chmod 777 /mnt
+          echo "修改后目录权限"
+          ls -ld /mnt
+        
       - name: 下载源码
         working-directory: /mnt
         run: |
+          echo "架构：${{ matrix.job.target }}"
+          echo "设备：${{ matrix.job.device }}"
           df -hT $PWD
+          ls
           git clone --single-branch -b $REPO_BRANCH $REPO_URL openwrt
           cd openwrt
           echo "openwrt_root=$PWD" >> $GITHUB_ENV
@@ -100,6 +100,8 @@ jobs:
           echo "target=$target" >> $GITHUB_ENV
           export CURRENT_HASH=$(git log --pretty=format:"%H" -n1 tools toolchain)
           echo "CURRENT_HASH=$CURRENT_HASH" >> $GITHUB_ENV
+          echo "FIRMWARE_VERSION=$(date +"%y%m%d")" >> $GITHUB_ENV
+          echo "START_DATE=$(date +%s)" >> $GITHUB_ENV
 
       - name: 更新并安装软件源
         env:
