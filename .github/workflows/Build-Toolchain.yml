@@ -9,7 +9,7 @@ on:
   #   paths:
   #     - '.github/workflows/Build-Toolchain.yml'
   schedule:
-    - cron: "0 20 * * *"
+    - cron: "0 20 * * 0"
 
 env:
   REPO_URL: https://github.com/immortalwrt/immortalwrt.git
