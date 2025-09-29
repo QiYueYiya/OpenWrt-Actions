@@ -10,7 +10,8 @@
        └── [model]/            # 如 360T7、RAX3000Me
            ├── files/          # 参考 OpenWrt 官方文档
            ├── .config         # 设备配置文件
-           └── diy_device.sh   # 设备专属脚本
+           ├── diy_device.sh   # 设备专属脚本
+           └── files_save.csv  # 保留文件列表
    ```
 
 ## 固件列表
@@ -18,7 +19,7 @@
 | :-------------: | :-------------: | :-------------: |
 | [![](https://img.shields.io/badge/immortalwrt-360T7-32C955.svg?logo=openwrt)](https://github.com/QiYueYiya/OpenWrt-Actions/blob/23.05/.github/workflows/Build-OpenWrt.yml) | [![](https://img.shields.io/badge/编译-配置-orange.svg?logo=apache-spark)](https://github.com/QiYueYiya/OpenWrt-Actions/tree/23.05/build/mediatek/filogic/360T7) | [![](https://img.shields.io/badge/下载-链接-blueviolet.svg?logo=hack-the-box)](https://github.com/QiYueYiya/OpenWrt-Actions/releases/tag/360T7) |
 | [![](https://img.shields.io/badge/immortalwrt-RAX3000Me-32C955.svg?logo=openwrt)](https://github.com/QiYueYiya/OpenWrt-Actions/blob/23.05/.github/workflows/Build-OpenWrt.yml) | [![](https://img.shields.io/badge/编译-配置-orange.svg?logo=apache-spark)](https://github.com/QiYueYiya/OpenWrt-Actions/tree/23.05/build/mediatek/filogic/RAX3000Me) | [![](https://img.shields.io/badge/下载-链接-blueviolet.svg?logo=hack-the-box)](https://github.com/QiYueYiya/OpenWrt-Actions/releases/tag/RAX3000Me) |
-
+| [![](https://img.shields.io/badge/immortalwrt-X86_64-32C955.svg?logo=openwrt)](https://github.com/QiYueYiya/OpenWrt-Actions/blob/23.05/.github/workflows/Build-OpenWrt.yml) | [![](https://img.shields.io/badge/编译-配置-orange.svg?logo=apache-spark)](https://github.com/QiYueYiya/OpenWrt-Actions/tree/23.05/build/x86/64/X86_64) | [![](https://img.shields.io/badge/下载-链接-blueviolet.svg?logo=hack-the-box)](https://github.com/QiYueYiya/OpenWrt-Actions/releases/tag/X86_64) |
 ## 赞助
 
 ![star](.github/files/star.png)
