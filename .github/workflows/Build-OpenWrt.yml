@@ -3,11 +3,17 @@ name: Build OpenWrt
 on:
   workflow_call:
   workflow_dispatch:
-  push:
-    branches:
-      - 23.05
-    paths:
-      - 'build/**/.config'
+    inputs:
+      device_select:
+        description: '选择要编译的设备'
+        required: false
+        type: choice
+        options:
+          - All
+          - 360T7
+          - RAX3000Me
+          - X86_64
+        default: All
   schedule:
     - cron: "0 0 * * 1"
 
@@ -38,12 +44,17 @@ jobs:
         id: devices
         run: |
           result=""
+          device_select="${{ github.event.inputs.device_select }}"
           while read dir; do
             if [ -f "$dir/diy_package.sh" ]; then
               arch_name=$(echo "$dir" | sed 's#build/##;s#/#/#g')
               for d in build/$arch_name/*; do
                 [ -d "$d" ] || continue
                 dev=$(basename "$d")
+                # 判断是否指定了 device_select，若指定则只保留匹配的设备
+                if [ "$device_select" != "All" ] && [ "$dev" != "$device_select" ]; then
+                  continue
+                fi
                 item="{\"target\": \"$arch_name\",\"device\": \"$dev\"}"
                 if [ -z "$result" ]; then
                   result="$item"
@@ -169,24 +180,54 @@ jobs:
 
       - name: 整理文件
         id: organize
+        shell: bash
+        env:
+          FILES_SAVE: build/${{ matrix.job.target }}/${{ matrix.job.device }}/files_save.csv
         if: steps.compile.outputs.status == 'success' && !cancelled()
         run: |
           # 整理固件包时候,删除您不想要的固件或者文件,让它不需要上传到Actions空间
           cd $openwrt_root/bin/targets/*/*
+          # 打包插件压缩包
           mkdir -p package
           mv packages package/core
           mv package packages
           mv $openwrt_root/bin/packages/*/* packages
           tar -czf packages.tar.gz packages
           rm -rf packages
-          mv *sysupgrade.itb ${{ matrix.job.device }}-$FIRMWARE_VERSION-squashfs-sysupgrade.itb
-          mv immortalwrt-sdk* ${{ matrix.job.device }}-$FIRMWARE_VERSION-SDK.tar.xz
-          rm -rf version.buildinfo
-          rm -rf profiles.json
-          rm -rf feeds.buildinfo
-          rm -rf sha256sums
-          rm -rf *bl2.bin
-          rm -rf immortalwrt*
+          # 1. 读取 $FILES_SAVE，收集所有需要保留的文件名（重命名后的也要保留）
+          keep_files=()
+          while IFS= read -r line || [ -n "$line" ]; do
+              if [[ "$line" == *,* ]]; then
+                  old_name="${line%%,*}"
+                  name="${line#*,}"
+                  old_name=$(echo "$old_name" | tr -d '\r' | xargs)
+                  name="${{ matrix.job.device }}-$FIRMWARE_VERSION-$(echo "$name" | tr -d '\r' | xargs)"
+                  if [ -e "$old_name" ]; then
+                      mv "$old_name" "$name"
+                      echo "重命名: $old_name -> $name"
+                  else
+                      echo "文件不存在，无法重命名: $old_name"
+                  fi
+              else
+                  name=$(echo "$line" | tr -d '\r' | xargs)
+              fi
+              keep_files+=("$name")
+          done < $GITHUB_WORKSPACE/$FILES_SAVE
+          for fname in *; do
+              [ -f "$fname" ] || continue
+              keep=false
+              for k in "${keep_files[@]}"; do
+                  if [[ "$fname" == "$k" ]]; then
+                      keep=true
+                      echo "保留: $fname"
+                      break
+                  fi
+              done
+              if [ "$keep" = false ]; then
+                  rm -f "$fname"
+                  echo "删除: $fname"
+              fi
+          done
           echo -e "$(sha256sum *)\n" > sha256sums
           echo "FIRMWARE=$PWD" >> $GITHUB_ENV
           echo "status=success" >> $GITHUB_OUTPUT
@@ -222,7 +263,8 @@ jobs:
           echo "编译时间：$(date -d "@$START_DATE" +"%Y年%m月%d日 %H点%M分")" >> release.txt
           echo "默认网关：192.168.5.1" >> release.txt
           echo 包含插件：$(grep "CONFIG_PACKAGE_luci-app-\(.*\)=y" $openwrt_root/.config | sed "s/CONFIG_PACKAGE_luci-app-\(.*\)=y/\1/g" | grep -v "_\|arpbind\|autoreboot\|firewall\|mtk\|opkg\|mtwifi\|ramfree\|package-manager") >> release.txt
-          echo "更新日志：" >> release.txt
+          echo "提交日志：" >> release.txt
+          git -C $GITHUB_WORKSPACE log -1 --pretty=format:"%h %an %ad %s" --date=short -- build/${{ matrix.job.target }}/${{ matrix.job.device }} >> release.txt
           echo "status=success" >> $GITHUB_OUTPUT
 
       - name: 将固件上传到release历史
@@ -230,16 +272,16 @@ jobs:
         if: steps.tag.outputs.status == 'success' && !cancelled()
         id: upload-history
         with:
-          name: 固件保留目录
-          tag_name: history
-          files: ${{ env.FIRMWARE }}/*sysupgrade.itb
+          name: ${{ matrix.job.device }}-${{ env.FIRMWARE_VERSION }}
+          tag_name: ${{ matrix.job.device }}-${{ env.FIRMWARE_VERSION }}
+          files: ${{ env.FIRMWARE }}/*
 
       - name: 将固件上传到release
         uses: softprops/action-gh-release@v2
         if: steps.tag.outputs.status == 'success' && !cancelled()
         id: upload-release
         with:
-          name: ${{ matrix.job.device }}-${{ env.FIRMWARE_VERSION }}
+          name: ${{ matrix.job.device }}-release
           tag_name: ${{ matrix.job.device }}
           body_path: release.txt
           files: ${{ env.FIRMWARE }}/*
