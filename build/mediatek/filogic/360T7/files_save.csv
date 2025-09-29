@@ -1,0 +1,4 @@
+config.buildinfo
+immortalwrt-mediatek-filogic-qihoo_360t7-squashfs-sysupgrade.itb,sysupgrade.itb
+immortalwrt-sdk-mediatek-filogic_gcc-12.3.0_musl.Linux-x86_64.tar.xz,mediatek-filogic-sdk_gcc-12.3.0_musl.Linux-x86_64.tar.xz
+packages.tar.gz
