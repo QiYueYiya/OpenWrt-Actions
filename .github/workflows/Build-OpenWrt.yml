@@ -274,6 +274,7 @@ jobs:
         with:
           name: ${{ matrix.job.device }}-${{ env.FIRMWARE_VERSION }}
           tag_name: ${{ matrix.job.device }}-${{ env.FIRMWARE_VERSION }}
+          body_path: release.txt
           files: ${{ env.FIRMWARE }}/*
 
       - name: 将固件上传到release
