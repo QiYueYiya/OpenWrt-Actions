@@ -52,7 +52,7 @@ jobs:
                 [ -d "$d" ] || continue
                 dev=$(basename "$d")
                 # 判断是否指定了 device_select，若指定则只保留匹配的设备
-                if [ "$device_select" != "All" ] && [ "$dev" != "$device_select" ]; then
+                if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "$device_select" != "All" ] && [ "$dev" != "$device_select" ]; then
                   continue
                 fi
                 item="{\"target\": \"$arch_name\",\"device\": \"$dev\"}"
