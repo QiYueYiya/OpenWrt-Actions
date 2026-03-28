@@ -216,8 +216,8 @@ jobs:
           for fname in *; do
               [ -f "$fname" ] || continue
               keep=false
-              for k in "${keep_files[@]}"; do
-                  if [[ "$fname" == "$k" ]]; then
+                for k in "${keep_files[@]}"; do
+                  if [[ "$fname" == *$k* ]]; then
                       keep=true
                       echo "保留: $fname"
                       break
