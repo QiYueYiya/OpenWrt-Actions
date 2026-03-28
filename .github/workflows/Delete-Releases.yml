@@ -1,9 +1,14 @@
-name: Delete Old Releases and Tags
+name: Delete Releases
 
 on:
   schedule:
-    - cron: '0 3 * * 1' # 每天凌晨3点执行
+    - cron: '0 3 * * 1' # 每周一凌晨3点执行
   workflow_dispatch:
+    inputs:
+      days:
+        description: '删除过期内容（默认30天前）'
+        required: false
+        default: '30'
 
 jobs:
   delete-old-releases-tags:
@@ -16,9 +21,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          DAYS=30
+          # 如果有输入参数则用输入参数，否则默认30
+          DAYS="${{ github.event.inputs.days || '30' }}"
           REPO="${{ github.repository }}"
-          echo "Fetching releases..."
+          echo "删除 $DAYS 天前的tag和release"
           releases=$(gh release list --limit 1000 --repo "$REPO" --json tagName,createdAt | jq -c '.[]')
           now=$(date +%s)
           for release in $releases; do
