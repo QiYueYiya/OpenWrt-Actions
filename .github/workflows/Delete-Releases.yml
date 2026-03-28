@@ -30,8 +30,8 @@ jobs:
           for release in $releases; do
             tag=$(echo $release | jq -r '.tagName')
             created=$(echo $release | jq -r '.createdAt')
-            # 检查tag格式：型号-日期
-            if [[ $tag =~ ^[A-Za-z0-9_-]+-[0-9]{6}$ ]]; then
+            # 检查tag格式：分支-型号-日期（或 型号-日期），允许字母、数字、下划线、连字符和点
+            if [[ $tag =~ ^[A-Za-z0-9_.-]+-[0-9]{6}$ ]]; then
               # 解析日期
               date_str=${tag##*-}
               year=20${date_str:0:2}
