@@ -150,7 +150,7 @@ jobs:
 
       - name: 恢复工具链缓存
         id: cache-toolchain
-        uses: actions/cache@v4
+        uses: actions/cache@main
         with:
           key: ${{ env.REPO_BRANCH }}-${{ env.target }}-${{ env.CURRENT_HASH }}
           path: |
@@ -268,7 +268,7 @@ jobs:
           echo "status=success" >> $GITHUB_OUTPUT
 
       - name: 将固件上传到release历史
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@main
         if: steps.tag.outputs.status == 'success' && !cancelled()
         id: upload-history
         with:
@@ -278,7 +278,7 @@ jobs:
           files: ${{ env.FIRMWARE }}/*
 
       - name: 将固件上传到release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@main
         if: steps.tag.outputs.status == 'success' && !cancelled()
         id: upload-release
         with:
