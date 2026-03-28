@@ -272,8 +272,8 @@ jobs:
         if: steps.tag.outputs.status == 'success' && !cancelled()
         id: upload-history
         with:
-          name: ${{ matrix.job.device }}-${{ env.FIRMWARE_VERSION }}
-          tag_name: ${{ matrix.job.device }}-${{ env.FIRMWARE_VERSION }}
+          name: ${{ env.REPO_BRANCH }}-${{ matrix.job.device }}-${{ env.FIRMWARE_VERSION }}
+          tag_name: ${{ env.REPO_BRANCH }}-${{ matrix.job.device }}-${{ env.FIRMWARE_VERSION }}
           body_path: release.txt
           files: ${{ env.FIRMWARE }}/*
 
@@ -282,8 +282,8 @@ jobs:
         if: steps.tag.outputs.status == 'success' && !cancelled()
         id: upload-release
         with:
-          name: ${{ matrix.job.device }}-release
-          tag_name: ${{ matrix.job.device }}
+          name: ${{ env.REPO_BRANCH }}-${{ matrix.job.device }}-release
+          tag_name: ${{ env.REPO_BRANCH }}-${{ matrix.job.device }}
           body_path: release.txt
           files: ${{ env.FIRMWARE }}/*
 
