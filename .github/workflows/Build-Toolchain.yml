@@ -25,7 +25,7 @@ jobs:
       repo_owner: ${{ steps.lower.outputs.repo_owner }}
     steps:
       - name: 检查项目分支
-        uses: actions/checkout@main
+        uses: actions/checkout@v6
 
       - name: 获取所有架构
         id: get_targets
@@ -101,7 +101,7 @@ jobs:
 
       - name: 恢复工具链缓存（仅定时触发且有缓存时）
         if: github.event_name == 'schedule' && steps.check_cache.outputs.CACHE_EXISTS == 'true'
-        uses: actions/cache@main
+        uses: actions/cache@v5
         with:
           key: ${{ env.REPO_BRANCH }}-${{ env.target }}-${{ env.CURRENT_HASH }}
           path: |
@@ -158,7 +158,7 @@ jobs:
 
       - name: 保存工具链缓存
         if: steps.compile.outputs.status == 'true'
-        uses: actions/cache@main
+        uses: actions/cache@v5
         with:
           key: ${{ env.REPO_BRANCH }}-${{ env.target }}-${{ env.CURRENT_HASH }}
           path: |

@@ -38,7 +38,7 @@ jobs:
       repo_owner: ${{ steps.lower.outputs.repo_owner }}
     steps:
       - name: 检查项目分支
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: 获取所有设备
         id: devices
@@ -85,7 +85,7 @@ jobs:
         job: ${{ fromJson(needs.get_devices.outputs.device_list) }}
     steps:
       - name: 检查项目分支
-        uses: actions/checkout@main
+        uses: actions/checkout@v6
 
       - name: 设置工作目录
         run: |
@@ -150,7 +150,7 @@ jobs:
 
       - name: 恢复工具链缓存
         id: cache-toolchain
-        uses: actions/cache@main
+        uses: actions/cache@v5
         with:
           key: ${{ env.REPO_BRANCH }}-${{ env.target }}-${{ env.CURRENT_HASH }}
           path: |
@@ -234,7 +234,7 @@ jobs:
 
       - name: 上传固件到Github Actions空间
         if: steps.organize.outputs.status == 'success' && env.UPLOAD_FIRMWARE == 'true' && !cancelled()
-        uses: actions/upload-artifact@main
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.job.device }}-$FIRMWARE_VERSION
           path: $FIRMWARE
@@ -268,7 +268,7 @@ jobs:
           echo "status=success" >> $GITHUB_OUTPUT
 
       - name: 将固件上传到release历史
-        uses: softprops/action-gh-release@main
+        uses: softprops/action-gh-release@v3
         if: steps.tag.outputs.status == 'success' && !cancelled()
         id: upload-history
         with:
@@ -278,7 +278,7 @@ jobs:
           files: ${{ env.FIRMWARE }}/*
 
       - name: 将固件上传到release
-        uses: softprops/action-gh-release@main
+        uses: softprops/action-gh-release@v3
         if: steps.tag.outputs.status == 'success' && !cancelled()
         id: upload-release
         with:
