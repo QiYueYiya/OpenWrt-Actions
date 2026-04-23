@@ -11,6 +11,7 @@ on:
         options:
           - all
           - cmcc_rax3000me
+          - generic
           - qihoo_360t7
       ip_address:
         type: string
