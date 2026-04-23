@@ -279,7 +279,7 @@ jobs:
               source "$CONFIG_FILE"
               ARCH="${arch:-unknown}"
               VERSION="${version:-unknown}"
-              RELEASE_TAG="${ARCH}-${VERSION}"
+              RELEASE_TAG="${VERSION}-${ARCH}"
               echo "📥 Downloading packages from release: $RELEASE_TAG"
               gh release download "$RELEASE_TAG" \
                 --pattern "*.ipk" \
