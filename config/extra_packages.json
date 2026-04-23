@@ -1,0 +1,11 @@
+[
+  {
+    "url": "https://github.com/EasyTier/luci-app-easytier",
+    "branch": "main",
+    "packages": [
+      "easytier", 
+      "luci-app-easytier"
+    ],
+    "scripts": "luci-app-easytier.sh"
+  }
+]

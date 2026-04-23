@@ -1,0 +1,12 @@
+# 设备名称，必须与官方设备名称一致
+export profile="qihoo_360t7"
+# 设备架构，必须与官方设备架构一致
+export targets="mediatek/filogic"
+# 设备CPU架构（用于下载预编译包）
+export arch="aarch64_cortex-a53"
+# OpenWrt版本，必须与官方版本一致
+export version="24.10.5"
+# 后台管理IP地址
+export ip_address="172.16.1.253"
+# 网络掩码
+export netmask="255.255.255.0"

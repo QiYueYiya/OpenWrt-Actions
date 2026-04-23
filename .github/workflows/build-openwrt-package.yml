@@ -1,0 +1,343 @@
+name: Build OpenWrt Packages
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TZ: Asia/Shanghai
+
+permissions:
+  contents: write
+
+jobs:
+  generate-matrix:
+    name: Generate Build Matrix
+    runs-on: ubuntu-latest
+    outputs:
+      sdk-versions: ${{ steps.collect-versions.outputs.versions }}
+      has-updates: ${{ steps.check-updates.outputs.has_updates }}
+      hashes-b64: ${{ steps.check-updates.outputs.hashes_b64 }}
+      updated-packages: ${{ steps.check-updates.outputs.updated_packages }}
+      updated-entries-b64: ${{ steps.check-updates.outputs.updated_entries_b64 }}
+    steps:
+      - name: 🛬 Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: 🧩 Generate SDK Version Matrix
+        id: collect-versions
+        run: |
+          declare -a versions_array=()
+          for config_file in build/*/config.sh; do
+            if [ -f "$config_file" ]; then
+              version=$(grep '^export version=' "$config_file" | cut -d'"' -f2 | xargs)
+              if [ -n "$version" ]; then
+                # 检查版本是否已在数组中
+                if [[ ! " ${versions_array[@]} " =~ " ${version} " ]]; then
+                  versions_array+=("$version")
+                fi
+              fi
+            fi
+          done
+
+          # 排序并生成 JSON 数组
+          sdk_list=$(printf '%s\n' "${versions_array[@]}" | sort -u | jq -R . | jq -s -c .)
+          echo "versions=$(echo $sdk_list | tr -d ' ')" >> $GITHUB_OUTPUT
+          echo "::notice::✅ Collected SDK versions: $(echo $sdk_list | tr -d ' ')"
+
+      - name: 🔍 Check Extra Package Source Updates
+        id: check-updates
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          HASH_TAG="extra-packages-hashes"
+          HASH_ASSET="extra_packages_hashes.json"
+          CURRENT_HASH_FILE="/tmp/current_${HASH_ASSET}"
+          PREVIOUS_HASH_FILE="/tmp/previous_${HASH_ASSET}"
+          UPDATED_ENTRIES_FILE="/tmp/updated_entries.json"
+          DOWNLOAD_DIR="/tmp/hash_release"
+
+          echo '{}' > "$CURRENT_HASH_FILE"
+          echo '[]' > "$UPDATED_ENTRIES_FILE"
+
+          mkdir -p "$DOWNLOAD_DIR"
+          if gh release view "$HASH_TAG" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            if gh release download "$HASH_TAG" --pattern "$HASH_ASSET" --dir "$DOWNLOAD_DIR" --repo "${{ github.repository }}" --clobber >/dev/null 2>&1; then
+              cp "$DOWNLOAD_DIR/$HASH_ASSET" "$PREVIOUS_HASH_FILE"
+            else
+              echo "{}" > "$PREVIOUS_HASH_FILE"
+            fi
+          else
+            echo "{}" > "$PREVIOUS_HASH_FILE"
+          fi
+
+          jq -S . "$PREVIOUS_HASH_FILE" > "${PREVIOUS_HASH_FILE}.sorted"
+          mv "${PREVIOUS_HASH_FILE}.sorted" "$PREVIOUS_HASH_FILE"
+
+          if [ -f "config/extra_packages.json" ]; then
+            while IFS= read -r entry; do
+              url=$(echo "$entry" | jq -r '.url // empty')
+              branch=$(echo "$entry" | jq -r '.branch // empty')
+              [ -n "$url" ] || continue
+              [ -n "$branch" ] || continue
+
+              remote_hash=$(git ls-remote "$url" "refs/heads/$branch" | awk 'NR==1 {print $1}')
+              if [ -z "$remote_hash" ]; then
+                echo "::error::Failed to get remote hash for $url@$branch"
+                exit 1
+              fi
+
+              key="${url}@${branch}"
+              tmp_file="${CURRENT_HASH_FILE}.tmp"
+              jq --arg k "$key" --arg v "$remote_hash" '. + {($k): $v}' "$CURRENT_HASH_FILE" > "$tmp_file"
+              mv "$tmp_file" "$CURRENT_HASH_FILE"
+              echo "📌 $key -> $remote_hash"
+
+              previous_hash=$(jq -r --arg k "$key" '.[$k] // ""' "$PREVIOUS_HASH_FILE")
+              if [ "$remote_hash" != "$previous_hash" ]; then
+                tmp_file="${UPDATED_ENTRIES_FILE}.tmp"
+                jq --argjson e "$entry" '. + [$e]' "$UPDATED_ENTRIES_FILE" > "$tmp_file"
+                mv "$tmp_file" "$UPDATED_ENTRIES_FILE"
+              fi
+            done < <(jq -c '.[]' config/extra_packages.json)
+          else
+            echo "::warning::config/extra_packages.json not found, using empty hash map"
+          fi
+
+          jq -S . "$CURRENT_HASH_FILE" > "${CURRENT_HASH_FILE}.sorted"
+          mv "${CURRENT_HASH_FILE}.sorted" "$CURRENT_HASH_FILE"
+
+          has_updates=false
+          if ! cmp -s "$CURRENT_HASH_FILE" "$PREVIOUS_HASH_FILE"; then
+            has_updates=true
+          fi
+
+          updated_packages=$(jq -r '.[].packages[]?' "$UPDATED_ENTRIES_FILE" | sort -u | xargs)
+          hashes_b64=$(base64 -w 0 "$CURRENT_HASH_FILE")
+          updated_entries_b64=$(base64 -w 0 "$UPDATED_ENTRIES_FILE")
+
+          echo "has_updates=$has_updates" >> $GITHUB_OUTPUT
+          echo "hashes_b64=$hashes_b64" >> $GITHUB_OUTPUT
+          echo "updated_packages=$updated_packages" >> $GITHUB_OUTPUT
+          echo "updated_entries_b64=$updated_entries_b64" >> $GITHUB_OUTPUT
+
+          if [ "$has_updates" = "true" ]; then
+            echo "::notice::✅ Source updates detected, build will run"
+            echo "::notice::📦 Updated packages: ${updated_packages:-<none>}"
+          else
+            echo "::notice::ℹ️ No source updates, build will be skipped"
+          fi
+
+  build:
+    name: Build ${{ matrix.arch }}-${{ matrix.sdk }}
+    runs-on: ubuntu-latest
+    needs: generate-matrix
+    if: needs.generate-matrix.outputs.has-updates == 'true' && needs.generate-matrix.outputs.updated-packages != ''
+    strategy:
+      fail-fast: false
+      matrix:
+        arch:
+          - aarch64_cortex-a53
+          # - aarch64_cortex-a72
+          # - aarch64_cortex-a76
+          # - aarch64_generic
+          # - arm_arm1176jzf-s_vfp
+          # - arm_arm926ej-s
+          # - arm_cortex-a15_neon-vfpv4
+          # - arm_cortex-a5_vfpv4
+          # - arm_cortex-a7
+          # - arm_cortex-a7_neon-vfpv4
+          # - arm_cortex-a7_vfpv4
+          # - arm_cortex-a8_vfpv3
+          # - arm_cortex-a9
+          # - arm_cortex-a9_neon
+          # - arm_cortex-a9_vfpv3-d16
+          # - arm_fa526
+          # - arm_xscale
+          # - armeb_xscale
+          # - i386_pentium-mmx
+          # - i386_pentium4
+          # - loongarch64_generic
+          # - mips64_mips64r2
+          # - mips64_octeonplus
+          # - mips64el_mips64r2
+          # - mips_24kc
+          # - mips_4kec
+          # - mips_mips32
+          # - mipsel_24kc
+          # - mipsel_24kc_24kf
+          # - mipsel_74kc
+          # - mipsel_mips32
+          # - powerpc64_e5500
+          # - powerpc_464fp
+          # - powerpc_8548
+          # - riscv64_riscv64
+          - x86_64
+        sdk: ${{ fromJson(needs.generate-matrix.outputs.sdk-versions) }}
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: 📅 Get Build Date (CST)
+        id: get-date
+        run: |
+          TZ='Asia/Shanghai'
+          build_date=$(TZ=$TZ date +'%Y-%m-%d %H:%M:%S %Z')
+          echo "date=$build_date" >> $GITHUB_OUTPUT
+
+      - name: 📦 Clone Extra Packages
+        env:
+          UPDATED_PACKAGES: ${{ needs.generate-matrix.outputs.updated-packages }}
+          UPDATED_ENTRIES_B64: ${{ needs.generate-matrix.outputs.updated-entries-b64 }}
+        run: |
+          if [ -z "$UPDATED_ENTRIES_B64" ]; then
+            echo "EXTRA_PACKAGES=" >> $GITHUB_ENV
+            echo "::warning::⚠️ No updated entries found"
+            exit 0
+          fi
+
+          UPDATED_ENTRIES_FILE="/tmp/updated_entries.json"
+          echo "$UPDATED_ENTRIES_B64" | base64 -d > "$UPDATED_ENTRIES_FILE"
+
+          entry_count=$(jq 'length' "$UPDATED_ENTRIES_FILE")
+          if [ "$entry_count" -eq 0 ]; then
+            echo "EXTRA_PACKAGES=" >> $GITHUB_ENV
+            echo "::notice::ℹ️ No updated plugin entries"
+            exit 0
+          fi
+
+          echo "EXTRA_PACKAGES=$UPDATED_PACKAGES" >> $GITHUB_ENV
+          echo "::notice::📦 Updated packages to build: $UPDATED_PACKAGES"
+
+          mkdir -p packages
+          jq -c '.[]' "$UPDATED_ENTRIES_FILE" | while IFS= read -r entry; do
+            url=$(echo "$entry" | jq -r '.url // empty')
+            branch=$(echo "$entry" | jq -r '.branch // empty')
+            script=$(echo "$entry" | jq -r '.scripts // empty')
+            [ -n "$url" ] || continue
+            [ -n "$branch" ] || continue
+
+            repo_name=$(basename "$url")
+            if [ ! -d "packages/$repo_name" ]; then
+              echo "🔍 Cloning updated source: $url (branch: $branch)"
+              git clone -b "$branch" "$url" "packages/$repo_name"
+              echo "✅ Cloned: $repo_name"
+            fi
+
+            if [ -n "$script" ] && [ -f "scripts/$script" ]; then
+              echo "🔧 Executing script: scripts/$script"
+              bash "scripts/$script"
+              echo "✅ Script executed: $script"
+            fi
+          done
+
+      - name: 🔨 Build OpenWrt Packages
+        uses: openwrt/gh-action-sdk@main
+        env:
+          ARCH: ${{ matrix.arch }}-${{ matrix.sdk }}
+          FEEDNAME: packages_ci
+          PACKAGES: ${{ needs.generate-matrix.outputs.updated-packages }}
+          #NO_DEFAULT_FEEDS: 1
+          NO_REFRESH_CHECK: 1
+          NO_SHFMT_CHECK: 1
+          MAKEFLAGS: -j$(nproc)
+
+      - name: 🎯 Verify Build Output
+        run: |
+          echo "🔍 Checking build output..."
+          if [ -d "bin/packages/${{ matrix.arch }}/packages_ci" ]; then
+            echo "✅ Found output directory"
+            FILE_COUNT=$(find bin/packages/${{ matrix.arch }}/packages_ci -type f | wc -l)
+            echo "📦 Total files: $FILE_COUNT"
+            find bin/packages/${{ matrix.arch }}/packages_ci -type f -exec ls -lh {} \; | head -10
+          else
+            echo "::error::❌ Output directory not found"
+            exit 1
+          fi
+
+      - name: 🗑️ Clean Old Remote IPK Assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RELEASE_TAG="${{ matrix.arch }}-${{ matrix.sdk }}"
+          PKG_DIR="bin/packages/${{ matrix.arch }}/packages_ci"
+          
+          echo "📋 Checking for old remote assets in release: $RELEASE_TAG"
+          
+          # 检查 release 是否存在，并获取资产列表
+          if ! gh release view "$RELEASE_TAG" &>/dev/null; then
+            echo "ℹ️ Release does not exist yet, skipping cleanup"
+            exit 0
+          fi
+          
+          # 获取远程 release 资产列表
+          gh release view "$RELEASE_TAG" --json assets -q '.assets[].name' > /tmp/remote_assets.txt || true
+          
+          # 遍历本地所有 ipk 文件
+          for ipk in "$PKG_DIR"/*.ipk; do
+            [ -e "$ipk" ] || continue
+            base=$(basename "$ipk")
+            # 提取包名（下划线前的部分）
+            prefix=${base%%_*}
+            
+            # 查找远程所有同包名但不同文件名的 ipk，并删除
+            grep "^${prefix}_" /tmp/remote_assets.txt | grep -v "^${base}$" | while read old_asset; do
+              echo "🗑️ Deleting old asset: $old_asset"
+              gh release delete-asset "$RELEASE_TAG" "$old_asset" -y 2>/dev/null || echo "⚠️ Failed to delete: $old_asset"
+            done
+          done
+          
+          echo "✅ Cleanup completed"
+
+      - name: 🚀 Upload to Release
+        uses: softprops/action-gh-release@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          files: bin/packages/${{ matrix.arch }}/packages_ci/*
+          tag_name: ${{ matrix.arch }}-${{ matrix.sdk }}
+          name: 📦 ${{ matrix.sdk }} Packages
+          body: |
+            ### 📋 Build Information
+
+            **Build ID**: `${{ github.run_id }}`
+            **Build Date**: `${{ steps.get-date.outputs.date }}`
+
+            ### 📦 Package Information
+
+            **Architecture**: `${{ matrix.arch }}`
+            **SDK Version**: `${{ matrix.sdk }}`
+
+  update-hash-release:
+    name: Update Source Hash Release
+    runs-on: ubuntu-latest
+    needs:
+      - generate-matrix
+      - build
+    if: needs.generate-matrix.outputs.has-updates == 'true' && (needs.build.result == 'success' || needs.build.result == 'skipped')
+    steps:
+      - name: 📄 Restore Hash File
+        run: |
+          HASH_FILE="extra_packages_hashes.json"
+          echo '${{ needs.generate-matrix.outputs.hashes-b64 }}' | base64 -d > "$HASH_FILE"
+          echo "✅ Restored hash file"
+          jq . "$HASH_FILE"
+
+      - name: 📤 Upload Hash File to Dedicated Release
+        uses: softprops/action-gh-release@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: extra-packages-hashes
+          name: Extra Packages Hashes
+          body: |
+            This release stores source branch hashes for extra packages.
+          files: extra_packages_hashes.json
+          draft: false
+          prerelease: false
+          overwrite_files: true
