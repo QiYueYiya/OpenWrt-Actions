@@ -10,3 +10,10 @@ export version="24.10.5"
 export ip_address="172.16.0.2"
 # 网络掩码
 export netmask="255.255.255.0"
+if [ -f ".config" ]; then
+    sed -i 's/CONFIG_ISO_IMAGES=y/# CONFIG_ISO_IMAGES is not set/' .config
+    sed -i 's/CONFIG_QCOW2_IMAGES=y/# CONFIG_QCOW2_IMAGES is not set/' .config
+    sed -i 's/CONFIG_VDI_IMAGES=y/# CONFIG_VDI_IMAGES is not set/' .config
+    sed -i 's/CONFIG_VMDK_IMAGES=y/# CONFIG_VMDK_IMAGES is not set/' .config
+    sed -i 's/CONFIG_VHDX_IMAGES=y/# CONFIG_VHDX_IMAGES is not set/' .config
+fi
