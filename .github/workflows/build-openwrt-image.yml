@@ -12,6 +12,10 @@ on:
           - all
           - cmcc_rax3000me
           - qihoo_360t7
+      ip_address:
+        type: string
+        description: "后台IP地址(可选)"
+        required: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -21,7 +25,7 @@ permissions:
   contents: write
 
 jobs:
-  prepare-matrix:
+  generate-matrix:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
@@ -49,12 +53,18 @@ jobs:
           echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
           echo "::notice::Build matrix: $MATRIX_JSON"
 
+  call-build-package:
+    uses: ./.github/workflows/build-openwrt-package.yml
+    secrets: inherit
+
   build:
-    needs: prepare-matrix
+    needs:
+      - generate-matrix
+      - call-build-package
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.prepare-matrix.outputs.matrix) }}
+      matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
     permissions:
       contents: write
     steps:
@@ -79,6 +89,7 @@ jobs:
         run: |
           PROFILE="${{ matrix.profile }}"
           CONFIG_FILE="build/${PROFILE}/config.sh"
+          INPUT_IP_ADDRESS="${{ github.event.inputs.ip_address }}"
           
           if [ ! -f "$CONFIG_FILE" ]; then
             echo "::error::Config file not found: $CONFIG_FILE"
@@ -87,6 +98,10 @@ jobs:
           
           # Source the config file
           source "$CONFIG_FILE"
+
+          if [ -n "$INPUT_IP_ADDRESS" ]; then
+            ip_address="$INPUT_IP_ADDRESS"
+          fi
           
           echo "profile=$profile" >> $GITHUB_OUTPUT
           echo "targets=$targets" >> $GITHUB_OUTPUT
@@ -306,7 +321,9 @@ jobs:
           mkdir -p imagebuilder/files/etc/uci-defaults
           cp "$DEVICE_CUSTOM_SH" "$TARGET_CUSTOM_SH"
 
-          sed -i "s|^ip_address=.*|ip_address=\"${IP_ADDRESS}\"|" "$TARGET_CUSTOM_SH"
+          if [ -n "$IP_ADDRESS" ]; then
+            sed -i "s|^ip_address=.*|ip_address=\"${IP_ADDRESS}\"|" "$TARGET_CUSTOM_SH"
+          fi
           sed -i "s|^netmask=.*|netmask=\"${NETMASK}\"|" "$TARGET_CUSTOM_SH"
 
           chmod +x "$TARGET_CUSTOM_SH"

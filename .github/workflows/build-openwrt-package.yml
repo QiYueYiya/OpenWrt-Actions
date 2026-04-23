@@ -1,13 +1,10 @@
 name: Build OpenWrt Packages
 
 on:
+  workflow_call:
   workflow_dispatch:
   schedule:
     - cron: '0 0 * * *'
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 
 env:
   TZ: Asia/Shanghai
@@ -20,7 +17,8 @@ jobs:
     name: Generate Build Matrix
     runs-on: ubuntu-latest
     outputs:
-      sdk-versions: ${{ steps.collect-versions.outputs.versions }}
+      arches: ${{ steps.collect.outputs.arches }}
+      versions: ${{ steps.collect.outputs.versions }}
       has-updates: ${{ steps.check-updates.outputs.has_updates }}
       hashes-b64: ${{ steps.check-updates.outputs.hashes_b64 }}
       updated-packages: ${{ steps.check-updates.outputs.updated_packages }}
@@ -29,26 +27,41 @@ jobs:
       - name: 🛬 Checkout Repository
         uses: actions/checkout@v6
 
-      - name: 🧩 Generate SDK Version Matrix
-        id: collect-versions
+      - name: 🧩 Generate Matrix
+        id: collect
         run: |
-          declare -a versions_array=()
-          for config_file in build/*/config.sh; do
-            if [ -f "$config_file" ]; then
-              version=$(grep '^export version=' "$config_file" | cut -d'"' -f2 | xargs)
-              if [ -n "$version" ]; then
-                # 检查版本是否已在数组中
-                if [[ ! " ${versions_array[@]} " =~ " ${version} " ]]; then
-                  versions_array+=("$version")
-                fi
-              fi
+          config_files=(build/*/config.sh)
+          if [ ${#config_files[@]} -eq 0 ]; then
+            echo "No config.sh files found under build/." >&2
+            exit 1
+          fi
+
+          arches=()
+          versions=()
+
+          for file in "${config_files[@]}"; do
+            arch="$(sed -n 's/^export arch="\([^"]*\)"/\1/p' "$file" | head -n1)"
+            version="$(sed -n 's/^export version="\([^"]*\)"/\1/p' "$file" | head -n1)"
+
+            if [ -z "$arch" ] || [ -z "$version" ]; then
+              echo "Missing arch/version in $file" >&2
+              exit 1
             fi
+
+            arches+=("$arch")
+            versions+=("$version")
           done
 
-          # 排序并生成 JSON 数组
-          sdk_list=$(printf '%s\n' "${versions_array[@]}" | sort -u | jq -R . | jq -s -c .)
-          echo "versions=$(echo $sdk_list | tr -d ' ')" >> $GITHUB_OUTPUT
-          echo "::notice::✅ Collected SDK versions: $(echo $sdk_list | tr -d ' ')"
+          mapfile -t arches_sorted < <(printf '%s\n' "${arches[@]}" | sort -u)
+          mapfile -t versions_sorted < <(printf '%s\n' "${versions[@]}" | sort -u)
+
+          arches_json="$(printf '%s\n' "${arches_sorted[@]}" | jq -Rsc 'split("\n")[:-1]')"
+          versions_json="$(printf '%s\n' "${versions_sorted[@]}" | jq -Rsc 'split("\n")[:-1]')"
+
+          {
+            echo "arches=$arches_json"
+            echo "versions=$versions_json"
+          } >> "$GITHUB_OUTPUT"
 
       - name: 🔍 Check Extra Package Source Updates
         id: check-updates
@@ -133,52 +146,16 @@ jobs:
             echo "::notice::ℹ️ No source updates, build will be skipped"
           fi
 
-  build:
-    name: Build ${{ matrix.arch }}-${{ matrix.sdk }}
+  build_package:
+    name: Build Package ${{ matrix.version }}-${{ matrix.arch }}
     runs-on: ubuntu-latest
     needs: generate-matrix
     if: needs.generate-matrix.outputs.has-updates == 'true' && needs.generate-matrix.outputs.updated-packages != ''
     strategy:
       fail-fast: false
       matrix:
-        arch:
-          - aarch64_cortex-a53
-          # - aarch64_cortex-a72
-          # - aarch64_cortex-a76
-          # - aarch64_generic
-          # - arm_arm1176jzf-s_vfp
-          # - arm_arm926ej-s
-          # - arm_cortex-a15_neon-vfpv4
-          # - arm_cortex-a5_vfpv4
-          # - arm_cortex-a7
-          # - arm_cortex-a7_neon-vfpv4
-          # - arm_cortex-a7_vfpv4
-          # - arm_cortex-a8_vfpv3
-          # - arm_cortex-a9
-          # - arm_cortex-a9_neon
-          # - arm_cortex-a9_vfpv3-d16
-          # - arm_fa526
-          # - arm_xscale
-          # - armeb_xscale
-          # - i386_pentium-mmx
-          # - i386_pentium4
-          # - loongarch64_generic
-          # - mips64_mips64r2
-          # - mips64_octeonplus
-          # - mips64el_mips64r2
-          # - mips_24kc
-          # - mips_4kec
-          # - mips_mips32
-          # - mipsel_24kc
-          # - mipsel_24kc_24kf
-          # - mipsel_74kc
-          # - mipsel_mips32
-          # - powerpc64_e5500
-          # - powerpc_464fp
-          # - powerpc_8548
-          # - riscv64_riscv64
-          - x86_64
-        sdk: ${{ fromJson(needs.generate-matrix.outputs.sdk-versions) }}
+        arch: ${{ fromJson(needs.generate-matrix.outputs.arches) }}
+        version: ${{ fromJson(needs.generate-matrix.outputs.versions) }}
 
     steps:
       - uses: actions/checkout@v6
@@ -241,10 +218,9 @@ jobs:
       - name: 🔨 Build OpenWrt Packages
         uses: openwrt/gh-action-sdk@main
         env:
-          ARCH: ${{ matrix.arch }}-${{ matrix.sdk }}
+          ARCH: ${{ matrix.arch }}-${{ matrix.version }}
           FEEDNAME: packages_ci
           PACKAGES: ${{ needs.generate-matrix.outputs.updated-packages }}
-          #NO_DEFAULT_FEEDS: 1
           NO_REFRESH_CHECK: 1
           NO_SHFMT_CHECK: 1
           MAKEFLAGS: -j$(nproc)
@@ -266,7 +242,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          RELEASE_TAG="${{ matrix.arch }}-${{ matrix.sdk }}"
+          RELEASE_TAG="${{ matrix.version }}-${{ matrix.arch }}"
           PKG_DIR="bin/packages/${{ matrix.arch }}/packages_ci"
           
           echo "📋 Checking for old remote assets in release: $RELEASE_TAG"
@@ -301,8 +277,8 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           files: bin/packages/${{ matrix.arch }}/packages_ci/*
-          tag_name: ${{ matrix.arch }}-${{ matrix.sdk }}
-          name: 📦 ${{ matrix.sdk }} Packages
+          tag_name: ${{ matrix.version }}-${{ matrix.arch }}
+          name: 📦 ${{ matrix.version }}-${{ matrix.arch }} Packages
           body: |
             ### 📋 Build Information
 
@@ -312,15 +288,15 @@ jobs:
             ### 📦 Package Information
 
             **Architecture**: `${{ matrix.arch }}`
-            **SDK Version**: `${{ matrix.sdk }}`
+            **SDK Version**: `${{ matrix.version }}`
 
   update-hash-release:
     name: Update Source Hash Release
     runs-on: ubuntu-latest
     needs:
       - generate-matrix
-      - build
-    if: needs.generate-matrix.outputs.has-updates == 'true' && (needs.build.result == 'success' || needs.build.result == 'skipped')
+      - build_package
+    if: needs.generate-matrix.outputs.has-updates == 'true' && needs.build_package.result == 'success'
     steps:
       - name: 📄 Restore Hash File
         run: |
