@@ -3,7 +3,7 @@ name: Build OpenWrt Image
 on:
   workflow_dispatch:
     inputs:
-      profile:
+      device:
         type: choice
         description: "选择型号"
         required: true
@@ -38,20 +38,20 @@ jobs:
       - name: 🧩 Build Matrix
         id: set-matrix
         run: |
-          SELECTED_PROFILE="${{ github.event.inputs.profile }}"
+          SELECTED_DEVICE="${{ github.event.inputs.device }}"
 
-          if [ "$SELECTED_PROFILE" = "all" ]; then
-            mapfile -t PROFILES < <(find build -mindepth 1 -maxdepth 1 -type d -exec test -f '{}/config.sh' ';' -printf '%f\n' | sort)
+          if [ "$SELECTED_DEVICE" = "all" ]; then
+            mapfile -t DEVICES < <(find build -mindepth 1 -maxdepth 1 -type d -exec test -f '{}/config.sh' ';' -printf '%f\n' | sort)
           else
-            PROFILES=("$SELECTED_PROFILE")
+            DEVICES=("$SELECTED_DEVICE")
           fi
 
-          if [ "${#PROFILES[@]}" -eq 0 ]; then
-            echo "::error::No build profiles found under build/"
+          if [ "${#DEVICES[@]}" -eq 0 ]; then
+            echo "::error::No build devices found under build/"
             exit 1
           fi
 
-          MATRIX_JSON=$(printf '%s\n' "${PROFILES[@]}" | jq -R -s -c 'split("\n") | map(select(length > 0)) | map({profile: .}) | {include: .}')
+          MATRIX_JSON=$(printf '%s\n' "${DEVICES[@]}" | jq -R -s -c 'split("\n") | map(select(length > 0)) | map({device: .}) | {include: .}')
           echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
           echo "::notice::Build matrix: $MATRIX_JSON"
 
@@ -89,8 +89,8 @@ jobs:
       - name: 📖 Read Device Configuration
         id: device-config
         run: |
-          PROFILE="${{ matrix.profile }}"
-          CONFIG_FILE="build/${PROFILE}/config.sh"
+          DEVICE="${{ matrix.device }}"
+          CONFIG_FILE="build/${DEVICE}/config.sh"
           INPUT_IP_ADDRESS="${{ github.event.inputs.ip_address }}"
           
           if [ ! -f "$CONFIG_FILE" ]; then
@@ -158,7 +158,6 @@ jobs:
         id: download
         if: steps.cache-restore.outputs.cache-hit != 'true'
         run: |
-          PROFILE="${{ matrix.profile }}"
           VERSION="${{ steps.device-config.outputs.version }}"
           DEVICE_TARGETS="${{ steps.device-config.outputs.targets }}"
           SANITIZED_TARGET="${{ steps.device-config.outputs.sanitized_target }}"
@@ -253,11 +252,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          PROFILE="${{ matrix.profile }}"
+          DEVICE="${{ matrix.device }}"
           DEFAULT_PKG="config/default_packages.sh"
-          DEVICE_PKG="build/${PROFILE}/packages.sh"
-          DEVICE_EXTRA_PKG="build/${PROFILE}/extra_packages.sh"
-          CONFIG_FILE="build/${PROFILE}/config.sh"
+          DEVICE_PKG="build/${DEVICE}/packages.sh"
+          DEVICE_EXTRA_PKG="build/${DEVICE}/extra_packages.sh"
+          CONFIG_FILE="build/${DEVICE}/config.sh"
           
           # Initialize PACKAGES variable
           PACKAGES=""
@@ -310,8 +309,8 @@ jobs:
 
       - name: 📂 Copy Custom Files
         run: |
-          PROFILE="${{ steps.device-config.outputs.profile }}"
-          DEVICE_CUSTOM_SH="build/${PROFILE}/99-custom.sh"
+          DEVICE="${{ matrix.device }}"
+          DEVICE_CUSTOM_SH="build/${DEVICE}/99-custom.sh"
           TARGET_CUSTOM_SH="imagebuilder/files/etc/uci-defaults/99-custom.sh"
           HOSTNAME="${{ steps.device-config.outputs.hostname }}"
           IP_ADDRESS="${{ steps.device-config.outputs.ip_address }}"
@@ -346,7 +345,6 @@ jobs:
         run: |
           PROFILE="${{ steps.device-config.outputs.profile }}"
           PACKAGES="${{ steps.packages.outputs.packages }}"
-          CONFIG_FILE="build/${PROFILE}/config.sh"
           
           cd imagebuilder
           
@@ -369,7 +367,7 @@ jobs:
 
       - name: 🗜️ Archive Artifacts
         run: |
-          PROFILE="${{ matrix.profile }}"
+          PROFILE="${{ steps.device-config.outputs.profile }}"
           ARTIFACT_DIR="artifacts/${PROFILE}"
           ARCH_SEGMENT="${{ steps.device-config.outputs.sanitized_target }}-"
 
@@ -414,7 +412,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          RELEASE_TAG="${{ steps.device-config.outputs.version }}-${{ matrix.profile }}"
+          RELEASE_TAG="${{ steps.device-config.outputs.version }}-${{ steps.device-config.outputs.profile }}"
           
           echo "🔍 Checking for existing release: $RELEASE_TAG"
           
@@ -439,9 +437,9 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          files: artifacts/${{ matrix.profile }}/*
-          tag_name: ${{ steps.device-config.outputs.version }}-${{ matrix.profile }}
-          name: 📤 ${{ steps.device-config.outputs.version }} ${{ matrix.profile }}
+          files: artifacts/${{ steps.device-config.outputs.profile }}/*
+          tag_name: ${{ steps.device-config.outputs.version }}-${{ steps.device-config.outputs.profile }}
+          name: 📤 ${{ steps.device-config.outputs.version }} ${{ matrix.device }}
           body: |
             ### 📋 Build Information
 
@@ -450,7 +448,7 @@ jobs:
 
             ### 🔧 Firmware Information
 
-            **Profile**: `${{ matrix.profile }}`
+            **Profile**: `${{ steps.device-config.outputs.profile }}`
             **Architecture**: `${{ steps.device-config.outputs.arch }}`
             **Target**: `${{ steps.device-config.outputs.targets }}`
             **SDK Version**: `${{ steps.device-config.outputs.version }}`
