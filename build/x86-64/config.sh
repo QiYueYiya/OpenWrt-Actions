@@ -9,7 +9,7 @@ export arch="x86_64"
 # OpenWrt版本，必须与官方版本一致
 export version="24.10.5"
 # 后台管理IP地址
-export ip_address="172.16.0.2"
+export ip_address="192.168.3.1"
 # 网络掩码
 export netmask="255.255.255.0"
 if [ -f "imagebuilder/.config" ]; then
