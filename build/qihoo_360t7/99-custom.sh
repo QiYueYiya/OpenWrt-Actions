@@ -1,10 +1,13 @@
 #!/bin/sh
 # 该脚本为immortalwrt首次启动时 运行的脚本 即 /etc/uci-defaults/99-custom.sh 也就是说该文件在路由器内 重启后消失 只运行一次
 # 基础变量
+hostname="immortalwrt"
 ip_address="192.168.1.1"
 netmask="255.255.255.0"
 LOGFILE="/etc/config/uci-defaults-log.txt"
 
+# 设置路由器主机名
+uci set system.@system[0].hostname=$hostname
 # 设置路由器管理后台地址
 uci set network.lan.ipaddr=$ip_address
 # 设置子网掩码

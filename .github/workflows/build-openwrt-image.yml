@@ -104,7 +104,8 @@ jobs:
           if [ -n "$INPUT_IP_ADDRESS" ]; then
             ip_address="$INPUT_IP_ADDRESS"
           fi
-          
+
+          echo "hostname=$hostname" >> $GITHUB_OUTPUT
           echo "profile=$profile" >> $GITHUB_OUTPUT
           echo "targets=$targets" >> $GITHUB_OUTPUT
           echo "arch=$arch" >> $GITHUB_OUTPUT
@@ -312,6 +313,7 @@ jobs:
           PROFILE="${{ steps.device-config.outputs.profile }}"
           DEVICE_CUSTOM_SH="build/${PROFILE}/99-custom.sh"
           TARGET_CUSTOM_SH="imagebuilder/files/etc/uci-defaults/99-custom.sh"
+          HOSTNAME="${{ steps.device-config.outputs.hostname }}"
           IP_ADDRESS="${{ steps.device-config.outputs.ip_address }}"
           NETMASK="${{ steps.device-config.outputs.netmask }}"
 
@@ -323,10 +325,17 @@ jobs:
           mkdir -p imagebuilder/files/etc/uci-defaults
           cp "$DEVICE_CUSTOM_SH" "$TARGET_CUSTOM_SH"
 
+          if [ -n "$hostname" ]; then
+            sed -i "s|^hostname=.*|hostname=\"${hostname}\"|" "$TARGET_CUSTOM_SH"
+          fi
+
           if [ -n "$IP_ADDRESS" ]; then
             sed -i "s|^ip_address=.*|ip_address=\"${IP_ADDRESS}\"|" "$TARGET_CUSTOM_SH"
           fi
-          sed -i "s|^netmask=.*|netmask=\"${NETMASK}\"|" "$TARGET_CUSTOM_SH"
+
+          if [ -n "$NETMASK" ]; then
+            sed -i "s|^netmask=.*|netmask=\"${NETMASK}\"|" "$TARGET_CUSTOM_SH"
+          fi
 
           chmod +x "$TARGET_CUSTOM_SH"
 

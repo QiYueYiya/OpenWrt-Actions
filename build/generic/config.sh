@@ -1,3 +1,5 @@
+# 主机名，可自定义
+export hostname="OpenWrt"
 # 设备名称，必须与官方设备名称一致
 export profile="generic"
 # 设备架构，必须与官方设备架构一致

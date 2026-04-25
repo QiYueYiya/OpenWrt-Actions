@@ -1,3 +1,5 @@
+# 主机名，可自定义
+export hostname="AX3000T"
 # 设备名称，必须与官方设备名称一致
 export profile="xiaomi_mi-router-ax3000t-ubootmod"
 # 设备架构，必须与官方设备架构一致
