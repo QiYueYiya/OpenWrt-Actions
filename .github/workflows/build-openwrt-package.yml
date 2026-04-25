@@ -277,8 +277,8 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           files: bin/packages/${{ matrix.arch }}/packages_ci/*
-          tag_name: ${{ matrix.version }}-${{ matrix.arch }}
-          name: 📦 ${{ matrix.version }}-${{ matrix.arch }} Packages
+          tag_name: ${{ matrix.version }}-${{ matrix.arch }}-packages
+          name: 📦 ${{ matrix.version }} ${{ matrix.arch }} Packages
           body: |
             ### 📋 Build Information
 

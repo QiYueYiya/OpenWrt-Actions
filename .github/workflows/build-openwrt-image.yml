@@ -11,8 +11,8 @@ on:
         options:
           - all
           - cmcc_rax3000me
-          - generic
           - qihoo_360t7
+          - x86-64
           - xiaomi_mi-router-ax3000t-ubootmod
       ip_address:
         type: string
@@ -281,7 +281,7 @@ jobs:
               source "$CONFIG_FILE"
               ARCH="${arch:-unknown}"
               VERSION="${version:-unknown}"
-              RELEASE_TAG="${VERSION}-${ARCH}"
+              RELEASE_TAG="${VERSION}-${ARCH}-packages"
               echo "📥 Downloading packages from release: $RELEASE_TAG"
               gh release download "$RELEASE_TAG" \
                 --pattern "*.ipk" \
