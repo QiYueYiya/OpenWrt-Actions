@@ -5,11 +5,11 @@
 # =========================== 自定义第三方 插件 ===========================
 
 # AdGuard Home - 广告过滤工具
-# PACKAGES="$PACKAGES luci-app-adguardhome"
+PACKAGES="$PACKAGES luci-i18n-adguardhome-zh-cn"
 
 # MosDNS - DNS解析工具
-# PACKAGES="$PACKAGES luci-app-mosdns"
-# PACKAGES="$PACKAGES luci-i18n-mosdns-zh-cn"
+PACKAGES="$PACKAGES luci-app-mosdns"
+PACKAGES="$PACKAGES luci-i18n-mosdns-zh-cn"
 
 # Easytier - P2P组网工具
 PACKAGES="$PACKAGES easytier"
