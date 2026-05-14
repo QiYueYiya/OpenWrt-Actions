@@ -19,13 +19,6 @@ on:
         description: "后台IP地址(可选)"
         required: false
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
-permissions:
-  contents: write
-
 jobs:
   generate-matrix:
     runs-on: ubuntu-latest
