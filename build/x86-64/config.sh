@@ -21,4 +21,13 @@ if [ -f "imagebuilder/.config" ]; then
     sed -i 's/CONFIG_TARGET_KERNEL_PARTSIZE=.*/CONFIG_TARGET_KERNEL_PARTSIZE=128/' imagebuilder/.config
     sed -i 's/CONFIG_TARGET_ROOTFS_PARTSIZE=.*/CONFIG_TARGET_ROOTFS_PARTSIZE=896/' imagebuilder/.config
     sed -i 's/CONFIG_TARGET_ROOTFS_AUTORESIZE=y/# CONFIG_TARGET_ROOTFS_AUTORESIZE is not set/' imagebuilder/.config
+    # Download and place OpenClash core
+    core_url="https://github.com/MetaCubeX/mihomo/releases/download/v1.19.25/mihomo-linux-amd64-v3-v1.19.25.gz"
+    core_dir="imagebuilder/files/etc/openclash/core"
+    tmp_gz="/tmp/mihomo-linux-amd64-v3-v1.19.25.gz"
+    mkdir -p "$core_dir"
+    curl -L -o "$tmp_gz" "$core_url"
+    gzip -dc "$tmp_gz" > "$core_dir/clash_meta"
+    chmod +x "$core_dir/clash_meta"
+    rm -f "$tmp_gz"
 fi
