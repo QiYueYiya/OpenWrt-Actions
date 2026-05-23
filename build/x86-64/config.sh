@@ -21,4 +21,14 @@ if [ -f "imagebuilder/.config" ]; then
     sed -i 's/CONFIG_TARGET_KERNEL_PARTSIZE=.*/CONFIG_TARGET_KERNEL_PARTSIZE=128/' imagebuilder/.config
     sed -i 's/CONFIG_TARGET_ROOTFS_PARTSIZE=.*/CONFIG_TARGET_ROOTFS_PARTSIZE=896/' imagebuilder/.config
     sed -i 's/CONFIG_TARGET_ROOTFS_AUTORESIZE=y/# CONFIG_TARGET_ROOTFS_AUTORESIZE is not set/' imagebuilder/.config
+    # Download and place OpenClash core
+    core_url="https://raw.githubusercontent.com/vernesong/OpenClash/core/master/meta/clash-linux-amd64-v1.tar.gz"
+    core_dir="imagebuilder/files/etc/openclash/core"
+    tmp_tar="/tmp/clash-linux-amd64-v1.tar.gz"
+    mkdir -p "$core_dir"
+    curl -L -o "$tmp_tar" "$core_url"
+    tar -xzf "$tmp_tar" -C "$core_dir"
+    mv -f "$core_dir/clash-linux-amd64" "$core_dir/clash_meta"
+    chmod +x "$core_dir/clash_meta"
+    rm -f "$tmp_tar"
 fi
